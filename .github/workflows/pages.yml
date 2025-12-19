@@ -1,0 +1,54 @@
+name: Deploy static briefing to GitHub Pages
+
+on:
+  push:
+    branches: ["master", "main"]
+  schedule:
+    - cron: "27 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build cityfeed-puller
+        run: cargo build --release --bin cityfeed-puller
+
+      - name: Pull latest site from origins
+        env:
+          MSPMETRO_ORIGINS: ${{ vars.MSPMETRO_ORIGINS || 'https://pull.s3.fr-par.scw.cloud https://mspmetro-eur.nbg1.your-objectstorage.com https://mspmetro-world.sfo3.digitaloceanspaces.com' }}
+        run: |
+          set -euo pipefail
+          mkdir -p build/puller build/site
+          ./target/release/cityfeed-puller --origin ${MSPMETRO_ORIGINS} --root build/puller
+          rsync -a --delete -L build/puller/current/ build/site/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

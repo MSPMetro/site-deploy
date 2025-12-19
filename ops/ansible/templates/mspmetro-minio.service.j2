@@ -1,0 +1,17 @@
+[Unit]
+Description=MinIO (mspmetro publisher)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ mspmetro_minio_user }}
+Group={{ mspmetro_minio_group }}
+Environment=MINIO_VOLUMES={{ mspmetro_minio_data_dir }}
+EnvironmentFile=-{{ mspmetro_minio_env_file }}
+ExecStart={{ mspmetro_minio_bin_path }} server {{ mspmetro_minio_data_dir }} --address {{ mspmetro_minio_bind_api }} --console-address {{ mspmetro_minio_bind_console }}
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

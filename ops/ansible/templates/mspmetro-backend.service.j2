@@ -1,0 +1,18 @@
+[Unit]
+Description=MSPMetro backend (Flask)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User={{ mspmetro_deploy_user }}
+Group={{ mspmetro_deploy_group }}
+WorkingDirectory={{ mspmetro_repo_dir }}
+EnvironmentFile=-/etc/default/mspmetro-backend
+ExecStart={{ mspmetro_repo_dir }}/backend/.venv/bin/gunicorn --bind 127.0.0.1:{{ mspmetro_backend_port }} --workers 2 mspmetro_backend.app:app
+Restart=on-failure
+RestartSec=3
+UMask=0022
+
+[Install]
+WantedBy=multi-user.target

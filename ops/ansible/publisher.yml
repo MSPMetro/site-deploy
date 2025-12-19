@@ -1,0 +1,110 @@
+---
+# Bootstrap a dedicated publisher host:
+# - MinIO (authoritative write endpoint)
+# - Fanout replication to configured S3-compatible origins
+# - A dedicated MinIO publish user for CLI publishing (no GUI required)
+#
+# Run:
+#   set -a; source .env; set +a
+#   ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i '144.76.5.115,' -u root ops/ansible/publisher.yml
+
+- import_playbook: minio_publisher.yml
+
+- import_playbook: minio_replication.yml
+
+- name: Create MinIO publish user (publisher)
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    mspmetro_minio_endpoint_url: http://127.0.0.1:9000
+    mspmetro_minio_env_file: /etc/mspmetro/env
+    mspmetro_minio_bucket: mspmetro-site
+    mspmetro_mc_path: /usr/local/bin/mc
+
+  tasks:
+    - name: Read MinIO env file
+      ansible.builtin.slurp:
+        src: "{{ mspmetro_minio_env_file }}"
+      register: minio_env_slurp
+      no_log: true
+
+    - name: Extract MinIO root credentials
+      ansible.builtin.set_fact:
+        minio_root_user: >-
+          {{
+            (
+              (minio_env_slurp.content | b64decode)
+              | regex_findall('(?m)^MINIO_ROOT_USER=(.*)$')
+              | first
+            )
+            | default('', true)
+          }}
+        minio_root_password: >-
+          {{
+            (
+              (minio_env_slurp.content | b64decode)
+              | regex_findall('(?m)^MINIO_ROOT_PASSWORD=(.*)$')
+              | first
+            )
+            | default('', true)
+          }}
+      no_log: true
+
+    - name: Ensure mc is installed
+      ansible.builtin.stat:
+        path: "{{ mspmetro_mc_path }}"
+      register: mc_stat
+
+    - name: Fail if mc is missing (minio_replication.yml should have installed it)
+      ansible.builtin.assert:
+        that:
+          - mc_stat.stat.exists
+        fail_msg: "mc not found at {{ mspmetro_mc_path }}; run ops/ansible/minio_replication.yml first."
+
+    - name: Create publish policy + user (idempotent)
+      no_log: true
+      ansible.builtin.shell: |
+        set -euo pipefail
+
+        "{{ mspmetro_mc_path }}" alias set minio "{{ mspmetro_minio_endpoint_url }}" "{{ minio_root_user }}" "{{ minio_root_password }}" --api S3v4 --path auto >/dev/null
+
+        policy_name="mspmetro-publish"
+        user="mspmetro-publish"
+        pass_file="/etc/mspmetro/minio-publish.creds"
+        bucket="{{ mspmetro_minio_bucket }}"
+
+        # Keep credentials stable across re-runs.
+        pass=""
+        if [[ -f "${pass_file}" ]]; then
+          pass="$(awk -F= '/^MINIO_PUBLISH_PASSWORD=/{print $2; exit 0}' "${pass_file}")"
+        fi
+        if [[ -z "${pass}" ]]; then
+          pass="$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')"
+        fi
+
+        # Create policy if missing (do not remove/recreate; it may be attached).
+        if ! "{{ mspmetro_mc_path }}" admin policy info minio "${policy_name}" >/dev/null 2>&1; then
+          B="$bucket" python3 -c 'import json,os; b=os.environ["B"]; print(json.dumps({"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:ListBucket"],"Resource":[f"arn:aws:s3:::{b}"]},{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject"],"Resource":[f"arn:aws:s3:::{b}/*"]}]}, indent=2, sort_keys=True))' > "/tmp/${policy_name}.json"
+          "{{ mspmetro_mc_path }}" admin policy create minio "${policy_name}" "/tmp/${policy_name}.json" >/dev/null
+          rm -f "/tmp/${policy_name}.json"
+        fi
+
+        # Ensure user exists.
+        if ! "{{ mspmetro_mc_path }}" admin user info minio "${user}" >/dev/null 2>&1; then
+          "{{ mspmetro_mc_path }}" admin user add minio "${user}" "${pass}" >/dev/null
+        fi
+
+        # Ensure attachment.
+        "{{ mspmetro_mc_path }}" admin policy attach minio "${policy_name}" --user "${user}" >/dev/null
+
+        # Write creds file (or refresh bucket name).
+        install -m 600 -o root -g root /dev/null "${pass_file}"
+        {
+          echo "MINIO_PUBLISH_USER=${user}"
+          echo "MINIO_PUBLISH_PASSWORD=${pass}"
+          echo "MINIO_PUBLISH_BUCKET=${bucket}"
+        } > "${pass_file}"
+      args:
+        executable: /bin/bash

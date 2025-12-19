@@ -1,0 +1,281 @@
+# MSPMetro Source Box: configured sources/endpoints
+#
+# This file is the canonical place to declare sources the Source Box should ingest.
+# It is applied to the database via:
+#   python -m mspmetro_backend sync-sources --file backend/config/sources.toml
+#
+# Notes:
+# - This is configuration, not data; keep it small and explicit.
+# - Add new sources here (name + tier + endpoints) before implementing ingestion logic.
+
+[[sources]]
+name = "National Weather Service"
+homepage_url = "https://www.weather.gov/"
+tier = "T1_AUTH"
+kind = "JSON_API"
+default_language = "en"
+trust_notes = "Authoritative weather warnings/advisories."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "JSON_API"
+  url = "https://api.weather.gov/alerts/active?point={lat},{lon}"
+  poll_interval_seconds = 900
+  enabled = true
+
+[[sources]]
+name = "MPR News"
+homepage_url = "https://www.mprnews.org/"
+tier = "T2_INST"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Minnesota Public Radio news feed."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://www.mprnews.org/feed/homepage"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "MinnPost"
+homepage_url = "https://www.minnpost.com/"
+tier = "T2_INST"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Local nonprofit newsroom (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://www.minnpost.com/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "Sahan Journal"
+homepage_url = "https://sahanjournal.com/"
+tier = "T2_INST"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Local newsroom focused on immigrant communities (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://sahanjournal.com/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "Minnesota Reformer"
+homepage_url = "https://minnesotareformer.com/"
+tier = "T2_INST"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Nonprofit statehouse reporting (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://minnesotareformer.com/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "Unicorn Riot"
+homepage_url = "https://unicornriot.ninja/"
+tier = "T3_COMM"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Independent reporting; treat as community source (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://unicornriot.ninja/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "Racket"
+homepage_url = "https://racketmn.com/"
+tier = "T2_INST"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Local Twin Cities publication (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://racketmn.com/feed"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "The UpTake"
+homepage_url = "https://theuptake.org/"
+tier = "T3_COMM"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Community journalism and civic coverage (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://theuptake.org/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "Streets.mn"
+homepage_url = "https://streets.mn/"
+tier = "T3_COMM"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Local transportation + civic blog network (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://streets.mn/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "The Spokesman-Recorder"
+homepage_url = "https://spokesman-recorder.com/"
+tier = "T3_COMM"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Community-focused Twin Cities coverage (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://spokesman-recorder.com/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "The Minnesota Daily"
+homepage_url = "https://mndaily.com/"
+tier = "T3_COMM"
+kind = "RSS"
+default_language = "en"
+trust_notes = "University of Minnesota student newsroom (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://mndaily.com/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+# Lifestyle / events (non-paywalled, recent, Twin Cities region)
+
+[[sources]]
+name = "Secret Minneapolis"
+homepage_url = "https://secretminneapolis.com/"
+tier = "T3_COMM"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Lifestyle and events roundup; treat as community (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://secretminneapolis.com/feed"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "Minnesota Monthly"
+homepage_url = "https://www.minnesotamonthly.com/"
+tier = "T2_INST"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Regional magazine; events and lifestyle coverage (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://www.minnesotamonthly.com/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "Artful Living"
+homepage_url = "https://artfulliving.com/"
+tier = "T2_INST"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Regional arts/design/lifestyle publication (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://artfulliving.com/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "Midwest Design"
+homepage_url = "https://midwestdesignmag.com/"
+tier = "T3_COMM"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Regional design and home coverage (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://midwestdesignmag.com/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "Twin Cities Family"
+homepage_url = "https://twincitiesfamily.com/"
+tier = "T3_COMM"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Family activities and local events (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://twincitiesfamily.com/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "Twin Cities Frugal Mom"
+homepage_url = "https://twincitiesfrugalmom.com/"
+tier = "T3_COMM"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Local deals and events; community source (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://twincitiesfrugalmom.com/feed/"
+  poll_interval_seconds = 1800
+  enabled = true
+
+[[sources]]
+name = "PhenoMNal Twin Cities"
+homepage_url = "https://www.phenomnaltwincities.com/"
+tier = "T4_OBS"
+kind = "RSS"
+default_language = "en"
+trust_notes = "Lifestyle/event posts; observational (RSS)."
+enabled = true
+
+  [[sources.endpoints]]
+  kind = "RSS"
+  url = "https://www.phenomnaltwincities.com/feed/"
+  poll_interval_seconds = 1800
+  enabled = true

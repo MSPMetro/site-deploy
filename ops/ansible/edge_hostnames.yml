@@ -1,0 +1,64 @@
+---
+# Ensure additional hostnames resolve to each edge site block in Caddy.
+#
+# This is used when you add vanity DNS like eur.mspmetro.com -> edge.eur.mspmetro.com
+# but want Caddy to actually serve the hostname (and obtain/serve the correct TLS cert).
+#
+# Inventory vars:
+#   mspmetro_caddy_site: primary site label (already present in Caddyfile)
+#   mspmetro_caddy_hostnames: optional comma-separated list of hostnames to add
+#
+# Run:
+#   ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i ops/ansible/inventory.ini ops/ansible/edge_hostnames.yml
+
+- name: Ensure edge hostnames exist in Caddy site blocks
+  hosts: mspmetro_edges
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Parse hostnames list (inventory var)
+      ansible.builtin.set_fact:
+        mspmetro_hostnames_list: >-
+          {{
+            (mspmetro_caddy_hostnames | default('', true))
+            | split(',')
+            | map('trim')
+            | reject('equalto', '')
+            | list
+          }}
+
+    - name: Skip when no extra hostnames configured
+      ansible.builtin.meta: end_host
+      when: (mspmetro_hostnames_list | length) == 0
+
+    - name: Install Caddy hostname patcher
+      ansible.builtin.copy:
+        src: files/patch_caddy_hostnames.py
+        dest: /usr/local/bin/mspmetro-patch-caddy-hostnames
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Apply hostname patch
+      ansible.builtin.command: >
+        /usr/local/bin/mspmetro-patch-caddy-hostnames
+        --site {{ mspmetro_caddy_site }}
+        {% for h in mspmetro_hostnames_list %} --add {{ h }}{% endfor %}
+      changed_when: false
+
+    - name: Format + validate Caddy config
+      ansible.builtin.shell: |
+        set -euo pipefail
+        caddy fmt --overwrite /etc/caddy/Caddyfile
+        caddy validate --config /etc/caddy/Caddyfile
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Reload Caddy
+      ansible.builtin.systemd:
+        name: caddy
+        state: reloaded
+      changed_when: false
+

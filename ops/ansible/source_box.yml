@@ -1,0 +1,369 @@
+---
+# Source Box: ingestion + normalization + alerts + snapshots (Python/Flask) + Postgres.
+# This host is authoritative for editorial data and informs the publisher what to ship to edges.
+#
+# NO DOCKER. Uses system packages + systemd.
+#
+# Run:
+#   ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i ops/ansible/inventory.ini ops/ansible/source_box.yml
+
+- name: Configure MSPMetro Source Box
+  hosts: mspmetro_source_box
+  become: true
+
+  vars:
+    mspmetro_repo_dir: /opt/mspmetro/source-box/cityfeed_pull
+    mspmetro_source_user: mspmetro
+    mspmetro_source_group: mspmetro
+    mspmetro_deploy_user: "{{ mspmetro_source_user }}"
+    mspmetro_deploy_group: "{{ mspmetro_source_group }}"
+
+    # Backend
+    mspmetro_backend_port: 5000
+    mspmetro_publish_unit: mspmetro-source-publish
+
+    # DB
+    mspmetro_db_name: mspmetro
+    mspmetro_db_user: mspmetro
+    # Override via inventory/group vars or --extra-vars (recommended).
+    mspmetro_db_password: "{{ lookup('env', 'MSPMETRO_DB_PASSWORD') | default('mspmetro', true) }}"
+    mspmetro_db_host: 127.0.0.1
+    mspmetro_db_port: 5432
+    mspmetro_database_url: >-
+      postgresql+psycopg://{{ mspmetro_db_user }}:{{ mspmetro_db_password }}@{{ mspmetro_db_host }}:{{ mspmetro_db_port }}/{{ mspmetro_db_name }}
+
+    # Public API hostname (Caddy will terminate TLS).
+    mspmetro_source_hostname: source.mspmetro.com
+
+  tasks:
+    - name: Install system packages
+      ansible.builtin.apt:
+        update_cache: true
+        name:
+          - ca-certificates
+          - curl
+          - python3-venv
+          - postgresql
+          - postgresql-contrib
+          - caddy
+          - rsync
+        state: present
+
+    - name: Ensure source user exists
+      ansible.builtin.group:
+        name: "{{ mspmetro_source_group }}"
+        system: true
+
+    - name: Ensure source user exists
+      ansible.builtin.user:
+        name: "{{ mspmetro_source_user }}"
+        group: "{{ mspmetro_source_group }}"
+        system: true
+        create_home: true
+        home: "/var/lib/{{ mspmetro_source_user }}"
+        shell: /usr/sbin/nologin
+
+    - name: Ensure repo directory exists
+      ansible.builtin.file:
+        path: "{{ mspmetro_repo_dir }}"
+        state: directory
+        owner: "{{ mspmetro_source_user }}"
+        group: "{{ mspmetro_source_group }}"
+        mode: "0755"
+
+    - name: Sync repo to source box
+      ansible.posix.synchronize:
+        src: "{{ playbook_dir }}/../..//"
+        dest: "{{ mspmetro_repo_dir }}/"
+        delete: true
+        rsync_opts:
+          - "--exclude=.git/"
+          - "--exclude=target/"
+          - "--exclude=backend/.venv/"
+          - "--exclude=.venv-publisher/"
+          - "--exclude=**/__pycache__/"
+          - "--exclude=*.pyc"
+
+    - name: Ensure repo ownership
+      ansible.builtin.file:
+        path: "{{ mspmetro_repo_dir }}"
+        state: directory
+        owner: "{{ mspmetro_source_user }}"
+        group: "{{ mspmetro_source_group }}"
+        recurse: true
+
+    - name: Ensure publish script is executable
+      ansible.builtin.file:
+        path: "{{ mspmetro_repo_dir }}/scripts/source_publish_hourly.sh"
+        mode: "0755"
+        owner: "{{ mspmetro_source_user }}"
+        group: "{{ mspmetro_source_group }}"
+
+    - name: Ensure Postgres is running
+      ansible.builtin.systemd:
+        name: postgresql
+        enabled: true
+        state: started
+
+    - name: Ensure Postgres role exists
+      ansible.builtin.shell: |
+        set -euo pipefail
+        sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='{{ mspmetro_db_user }}'" | grep -q 1 \
+          || sudo -u postgres psql -c "CREATE ROLE {{ mspmetro_db_user }} WITH LOGIN PASSWORD '{{ mspmetro_db_password }}'"
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Ensure Postgres database exists
+      ansible.builtin.shell: |
+        set -euo pipefail
+        sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='{{ mspmetro_db_name }}'" | grep -q 1 \
+          || sudo -u postgres createdb -O {{ mspmetro_db_user }} {{ mspmetro_db_name }}
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Create backend venv
+      ansible.builtin.command: python3 -m venv backend/.venv
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        creates: "{{ mspmetro_repo_dir }}/backend/.venv/bin/python3"
+      become_user: "{{ mspmetro_source_user }}"
+
+    - name: Install backend dependencies
+      ansible.builtin.shell: |
+        set -euo pipefail
+        backend/.venv/bin/pip install -U pip
+        backend/.venv/bin/pip install -e backend
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        executable: /bin/bash
+      become_user: "{{ mspmetro_source_user }}"
+
+    - name: Create publisher venv (for S3 publishing scripts)
+      ansible.builtin.command: python3 -m venv .venv-publisher
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        creates: "{{ mspmetro_repo_dir }}/.venv-publisher/bin/python3"
+      become_user: "{{ mspmetro_source_user }}"
+
+    - name: Check publisher venv integrity (pip shebang)
+      ansible.builtin.shell: |
+        set -euo pipefail
+        if [[ ! -f .venv-publisher/bin/pip ]]; then
+          echo "missing"
+          exit 0
+        fi
+        head -n 1 .venv-publisher/bin/pip || true
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        executable: /bin/bash
+      register: publisher_venv_pip_shebang
+      changed_when: false
+      become_user: "{{ mspmetro_source_user }}"
+
+    - name: Recreate publisher venv if it was rsynced from another machine
+      ansible.builtin.shell: |
+        set -euo pipefail
+        rm -rf .venv-publisher
+        python3 -m venv .venv-publisher
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        executable: /bin/bash
+      become_user: "{{ mspmetro_source_user }}"
+      when:
+        - publisher_venv_pip_shebang.stdout is defined
+        - publisher_venv_pip_shebang.stdout | length > 0
+        - (mspmetro_repo_dir ~ "/.venv-publisher/") not in publisher_venv_pip_shebang.stdout
+
+    - name: Install publisher dependencies
+      ansible.builtin.shell: |
+        set -euo pipefail
+        .venv-publisher/bin/pip install -U pip
+        .venv-publisher/bin/pip install -r scripts/publisher_requirements.txt
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        executable: /bin/bash
+      become_user: "{{ mspmetro_source_user }}"
+
+    - name: Run backend migrations
+      ansible.builtin.shell: |
+        set -euo pipefail
+        export DATABASE_URL="{{ mspmetro_database_url }}"
+        backend/.venv/bin/alembic -c backend/alembic.ini upgrade head
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        executable: /bin/bash
+      become_user: "{{ mspmetro_source_user }}"
+
+    - name: Sync configured sources into DB
+      ansible.builtin.shell: |
+        set -euo pipefail
+        export DATABASE_URL="{{ mspmetro_database_url }}"
+        backend/.venv/bin/python -m mspmetro_backend sync-sources --file backend/config/sources.toml
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        executable: /bin/bash
+      become_user: "{{ mspmetro_source_user }}"
+      changed_when: false
+
+    - name: Write backend env file
+      ansible.builtin.template:
+        src: templates/mspmetro-backend.env.j2
+        dest: /etc/default/mspmetro-backend
+        owner: root
+        group: root
+        mode: "0640"
+
+    - name: Read MinIO publish creds (for hourly publish)
+      ansible.builtin.slurp:
+        src: /etc/mspmetro/minio-publish.creds
+      register: minio_publish_creds_slurp
+      no_log: true
+
+    - name: Extract MinIO publish creds
+      ansible.builtin.set_fact:
+        minio_publish_user: >-
+          {{
+            (
+              (minio_publish_creds_slurp.content | b64decode)
+              | regex_findall('(?m)^MINIO_PUBLISH_USER=(.*)$')
+              | first
+            )
+            | default('', true)
+          }}
+        minio_publish_password: >-
+          {{
+            (
+              (minio_publish_creds_slurp.content | b64decode)
+              | regex_findall('(?m)^MINIO_PUBLISH_PASSWORD=(.*)$')
+              | first
+            )
+            | default('', true)
+          }}
+        minio_publish_bucket: >-
+          {{
+            (
+              (minio_publish_creds_slurp.content | b64decode)
+              | regex_findall('(?m)^MINIO_PUBLISH_BUCKET=(.*)$')
+              | first
+            )
+            | default('mspmetro-site', true)
+          }}
+      no_log: true
+
+    - name: Assert MinIO publish creds found
+      ansible.builtin.assert:
+        that:
+          - minio_publish_user | length > 0
+          - minio_publish_password | length > 0
+          - minio_publish_bucket | length > 0
+        fail_msg: "Missing MINIO_PUBLISH_* values in /etc/mspmetro/minio-publish.creds"
+
+    - name: Write publish env file (readable by mspmetro)
+      ansible.builtin.template:
+        src: templates/mspmetro-source-publish.env.j2
+        dest: /etc/default/mspmetro-source-publish
+        owner: root
+        group: "{{ mspmetro_source_group }}"
+        mode: "0640"
+      no_log: true
+
+    - name: Install systemd unit (backend)
+      ansible.builtin.template:
+        src: templates/mspmetro-backend.service.j2
+        dest: /etc/systemd/system/mspmetro-backend.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install systemd unit (ingest)
+      ansible.builtin.template:
+        src: templates/mspmetro-source-ingest.service.j2
+        dest: /etc/systemd/system/mspmetro-source-ingest.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install systemd timer (ingest)
+      ansible.builtin.template:
+        src: templates/mspmetro-source-ingest.timer.j2
+        dest: /etc/systemd/system/mspmetro-source-ingest.timer
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install systemd unit (publish)
+      ansible.builtin.template:
+        src: templates/mspmetro-source-publish.service.j2
+        dest: /etc/systemd/system/{{ mspmetro_publish_unit }}.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install systemd timer (publish)
+      ansible.builtin.template:
+        src: templates/mspmetro-source-publish.timer.j2
+        dest: /etc/systemd/system/{{ mspmetro_publish_unit }}.timer
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Write Caddy site for source API
+      ansible.builtin.copy:
+        dest: /etc/caddy/Caddyfile
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          {
+            email admin@mspmetro.mn
+          }
+
+          {{ mspmetro_source_hostname }} {
+            encode gzip zstd
+            reverse_proxy 127.0.0.1:{{ mspmetro_backend_port }}
+          }
+
+    - name: Format + validate Caddy config
+      ansible.builtin.shell: |
+        set -euo pipefail
+        caddy fmt --overwrite /etc/caddy/Caddyfile
+        caddy validate --config /etc/caddy/Caddyfile
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable and start backend
+      ansible.builtin.systemd:
+        name: mspmetro-backend.service
+        enabled: true
+        state: started
+
+    - name: Enable and start ingest timer
+      ansible.builtin.systemd:
+        name: mspmetro-source-ingest.timer
+        enabled: true
+        state: started
+
+    - name: Enable and start publish timer
+      ansible.builtin.systemd:
+        name: "{{ mspmetro_publish_unit }}.timer"
+        enabled: true
+        state: started
+
+    - name: Reload Caddy
+      ansible.builtin.systemd:
+        name: caddy
+        enabled: true
+        state: reloaded
+
+    - name: Smoke test backend via localhost
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ mspmetro_backend_port }}/healthz"
+        status_code: 200
+      register: backend_healthz

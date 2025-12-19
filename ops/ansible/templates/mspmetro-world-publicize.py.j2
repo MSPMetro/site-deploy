@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
+
+
+def main() -> int:
+    # systemd provides DST_ALIAS/DST_BUCKET via EnvironmentFile
+    dst_alias = os.environ.get("DST_ALIAS") or "world"
+    bucket = os.environ.get("DST_BUCKET") or "mspmetro-world"
+    prefixes = tuple(
+        (
+            os.environ.get("PUBLICIZE_PREFIXES")
+            or "manifests/,objects/,static/,index.html,metro/,neighbors/,transit/,events/,weather/,world/,how-we-know/,daily/"
+        ).split(",")
+    )
+
+    mc_config_str = (os.environ.get("MC_CONFIG") or "").strip()
+    mc_config = Path(mc_config_str) if mc_config_str else (Path.home() / ".mc" / "config.json")
+    cfg = json.loads(mc_config.read_text())
+    alias = (cfg.get("aliases") or {}).get(dst_alias)
+    if not alias:
+        raise SystemExit(f"missing mc alias {dst_alias!r} in {mc_config}")
+
+    endpoint_url = alias.get("url")
+    access_key = alias.get("accessKey")
+    secret_key = alias.get("secretKey")
+    if not endpoint_url or not access_key or not secret_key:
+        raise SystemExit(f"mc alias {dst_alias!r} is missing url/accessKey/secretKey")
+
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=endpoint_url,
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        region_name="us-east-1",
+        config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
+    )
+
+    updated = 0
+    scanned = 0
+
+    paginator = s3.get_paginator("list_objects_v2")
+    for prefix in prefixes:
+        prefix = prefix.strip()
+        if not prefix:
+            continue
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+            for obj in page.get("Contents", []):
+                key = obj.get("Key")
+                if not key:
+                    continue
+                scanned += 1
+                try:
+                    s3.put_object_acl(Bucket=bucket, Key=key, ACL="public-read")
+                    updated += 1
+                except ClientError as e:
+                    code = (e.response.get("Error") or {}).get("Code") or ""
+                    msg = (e.response.get("Error") or {}).get("Message") or ""
+                    raise SystemExit(f"failed put_object_acl for {bucket}/{key}: {code}: {msg}") from e
+
+    print(f"OK: publicized {updated} objects (scanned {scanned}) in {dst_alias}/{bucket}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

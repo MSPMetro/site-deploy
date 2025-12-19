@@ -1,0 +1,22 @@
+---
+- name: Configure MinIO Replication
+  hosts: origin
+  become: true
+  vars_files:
+    - ../env/.env.origin
+
+  tasks:
+    - name: Configure MinIO aliases
+      shell: |
+        mc alias set origin {{ MINIO_ENDPOINT }} {{ MINIO_ROOT_USER }} {{ MINIO_ROOT_PASSWORD }}
+        mc alias set replica1 {{ REPLICA_PUBLIC_1_ENDPOINT }} {{ REPLICA_PUBLIC_1_KEY }} {{ REPLICA_PUBLIC_1_SECRET }}
+        mc alias set replica2 {{ REPLICA_PUBLIC_2_ENDPOINT }} {{ REPLICA_PUBLIC_2_KEY }} {{ REPLICA_PUBLIC_2_SECRET }}
+
+    - name: Enable versioning on origin bucket
+      shell: mc version enable origin/{{ ORIGIN_SITE_BUCKET }}
+
+    - name: Enable replication
+      shell: |
+        mc replicate add origin/{{ ORIGIN_SITE_BUCKET }} \
+          --remote-bucket replica1/{{ EDGE_SOURCE_BUCKET }} \
+          --replicate "delete,existing-objects"

@@ -1,0 +1,5 @@
+mspmetro.com www.mspmetro.com {
+    root * /var/www/mspmetro-brief/current
+    file_server
+    encode zstd gzip
+}

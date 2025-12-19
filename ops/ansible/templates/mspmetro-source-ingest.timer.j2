@@ -1,0 +1,12 @@
+[Unit]
+Description=Run MSPMetro source ingestion worker
+
+[Timer]
+OnBootSec=2m
+OnUnitActiveSec=15m
+RandomizedDelaySec=30m
+Persistent=true
+Unit=mspmetro-source-ingest.service
+
+[Install]
+WantedBy=timers.target

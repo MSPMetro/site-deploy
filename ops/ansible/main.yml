@@ -1,0 +1,21 @@
+---
+- name: Install awscli
+  apt:
+    name: awscli
+    state: present
+
+- name: Create web root
+  file:
+    path: "{{ EDGE_WWW_ROOT }}"
+    state: directory
+
+- name: Install sync script
+  copy:
+    dest: /usr/local/bin/mspmetro-edge-sync.sh
+    mode: '0755'
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      aws s3 sync s3://{{ EDGE_SOURCE_BUCKET }} {{ EDGE_WWW_ROOT }} \
+        --endpoint-url {{ S3_ENDPOINT }} \
+        --delete

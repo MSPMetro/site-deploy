@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+origins=()
+for o in "${ORIGIN_PRIMARY:-}" "${ORIGIN_SECONDARY:-}" "${ORIGIN_TERTIARY:-}"; do
+  if [[ -n "${o}" ]]; then
+    origins+=(--origin "${o}")
+  fi
+done
+
+exec /usr/local/bin/cityfeed-puller --root "${ROOT:?missing ROOT in /etc/default/cityfeed-puller-brief}" "${origins[@]}"
+

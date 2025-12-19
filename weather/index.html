@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Weather briefing: Minneapolis–Saint Paul daily conditions and impacts."
+    />
+
+    <link rel="stylesheet" href="/static/css/daily.css" />
+    <link
+      rel="preload"
+      href="/static/fonts/AtkinsonHyperlegibleNext-Regular.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/static/fonts/AtkinsonHyperlegibleNext-Bold.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link rel="icon" type="image/png" href="/static/favicon.png" />
+    <link rel="apple-touch-icon" href="/static/favicon.png" />
+    <title>MSPMetro — Weather</title>
+  </head>
+  <body id="top">
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="orientation" aria-label="Orientation">
+      <div class="wrap">
+        <dl class="orientation-grid">
+          <div>
+            <dt>Day</dt>
+            <dd>Wednesday</dd>
+          </div>
+          <div>
+            <dt>Date</dt>
+            <dd>December 17, 2025</dd>
+          </div>
+          <div>
+            <dt>Region</dt>
+            <dd>Twin Cities</dd>
+          </div>
+          <div>
+            <dt>Weather</dt>
+            <dd>
+              32°F <span class="muted">(feels 26°F)</span>
+              <span aria-hidden="true">•</span> Snow after 7pm
+            </dd>
+          </div>
+          <div>
+            <dt>Sunset</dt>
+            <dd>4:36pm</dd>
+          </div>
+        </dl>
+      </div>
+      <a class="brand" href="/" aria-label="MSPMetro home">
+        <img
+          src="/static/Logo_SVG.svg"
+          alt=""
+          aria-hidden="true"
+          width="96"
+          height="96"
+        />
+      </a>
+    </header>
+
+    <nav class="top-nav" aria-label="Primary">
+      <div class="wrap">
+        <a href="/weather/">Weather</a> · <a href="/metro/">Metro</a> ·
+        <a href="/world/">World</a> · <a href="/neighbors/">Neighbors</a> ·
+        <a href="/transit/">Transit</a> · <a href="/events/">Events</a>
+      </div>
+    </nav>
+
+    <main id="main" class="wrap" tabindex="-1">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Daily briefing</a>
+      </nav>
+
+      <header class="section-header">
+        <h1>Weather — Twin Cities Metro</h1>
+        <p class="section-meta">Updated 12 minutes ago · Source: NWS + Open-Meteo</p>
+      </header>
+
+      <p class="status-line">
+        <span class="status-line__label">WEATHER STATUS:</span> Winter weather
+        advisory in effect after 7pm
+      </p>
+
+      <section class="briefing" aria-label="Section brief">
+        <h2 class="kicker" id="section-brief-title">SECTION BRIEF</h2>
+        <ul class="brief-list" aria-labelledby="section-brief-title">
+          <li>Light snow expected this evening with icy sidewalks overnight.</li>
+          <li>Wind gusts may reach 25 mph after sunset.</li>
+          <li>Morning commute expected to be normal.</li>
+        </ul>
+      </section>
+
+      <section class="metrics" aria-label="Current conditions">
+        <h2 class="kicker" id="metrics-title">CURRENT CONDITIONS</h2>
+        <dl class="metrics-grid" aria-labelledby="metrics-title">
+          <div class="metric">
+            <dt>Temperature</dt>
+            <dd>32°F <span class="muted">(feels like 26°)</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Wind</dt>
+            <dd>NW 18 mph <span class="muted">(gusts to 25 mph)</span></dd>
+          </div>
+          <div class="metric">
+            <dt>Snow Chance</dt>
+            <dd>70% after 7pm</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="details" aria-label="Weather stories">
+        <article
+          id="advisory"
+          class="article-detail"
+          data-story-type="Advisory"
+          data-expiration="condition_ends"
+        >
+          <h2>Winter Weather Advisory After 7pm</h2>
+          <p>
+            An advisory indicates conditions that may cause travel difficulties.
+            The most likely impact window begins after 7pm, when temperatures are
+            near freezing and surfaces cool quickly after sunset.
+          </p>
+          <p>
+            If you can, move errands earlier. If you must drive later, plan for
+            slower intersections and more stopping distance.
+          </p>
+          <p class="meta-line"><span class="meta-label">Type:</span> Advisory</p>
+          <p class="meta-line">
+            <span class="meta-label">Expires:</span> When condition ends
+          </p>
+          <p class="meta-line"><span class="meta-label">Updated:</span> 12 minutes ago</p>
+          <p class="source">
+            <span class="meta-label">Sources:</span>
+            <a
+              href="https://api.weather.gov/alerts"
+              rel="external noopener noreferrer"
+              >National Weather Service (Tier 1)
+              <span class="arrow" aria-hidden="true">↗</span
+              ><span class="sr-only"> (external site)</span></a
+            >
+          </p>
+        </article>
+
+        <article
+          id="gusts-update"
+          class="article-detail"
+          data-story-type="Update"
+          data-expiration="condition_ends"
+        >
+          <h2>Wind Gusts Revised Upward After Sunset</h2>
+          <p>
+            Gusty winds increase the chance of reduced visibility and localized
+            drifting in open areas. The current forecast indicates gusts may reach
+            the mid-20s mph after sunset.
+          </p>
+          <p class="update-line">
+            <span class="meta-label">What changed:</span> Gust estimate revised to
+            25 mph after sunset.
+          </p>
+          <p class="meta-line"><span class="meta-label">Type:</span> Update</p>
+          <p class="meta-line">
+            <span class="meta-label">Expires:</span> Inherits parent story expiration
+          </p>
+          <p class="meta-line"><span class="meta-label">Updated:</span> 12 minutes ago</p>
+          <p class="source">
+            <span class="meta-label">Sources:</span>
+            <a
+              href="https://api.open-meteo.com/"
+              rel="external noopener noreferrer"
+              >Open-Meteo (Tier 2) <span class="arrow" aria-hidden="true">↗</span
+              ><span class="sr-only"> (external site)</span></a
+            >
+            <span aria-hidden="true"> · </span>
+            <a
+              href="https://api.weather.gov/gridpoints/MPX"
+              rel="external noopener noreferrer"
+              >NWS (Tier 1) <span class="arrow" aria-hidden="true">↗</span
+              ><span class="sr-only"> (external site)</span></a
+            >
+          </p>
+        </article>
+      </section>
+
+      <section class="maps" aria-label="Maps">
+        <h2 class="kicker" id="maps-title">MAPS</h2>
+        <details>
+          <summary>Radar</summary>
+          <p class="muted">
+            Optional view. Kept below the briefing; no animation by default.
+          </p>
+          <p>
+            <a
+              href="https://radar.weather.gov/"
+              rel="external noopener noreferrer"
+              >NWS Radar <span class="arrow" aria-hidden="true">↗</span
+              ><span class="sr-only"> (external site)</span></a
+            >
+          </p>
+        </details>
+        <details>
+          <summary>Snow Accumulation</summary>
+          <p class="muted">Optional view; used for planning only.</p>
+          <p>
+            <a
+              href="https://www.weather.gov/"
+              rel="external noopener noreferrer"
+              >NWS Forecast Maps <span class="arrow" aria-hidden="true">↗</span
+              ><span class="sr-only"> (external site)</span></a
+            >
+          </p>
+        </details>
+        <details>
+          <summary>Temperature Gradient</summary>
+          <p class="muted">Optional view; most useful near freezing.</p>
+          <p>
+            <a
+              href="https://www.weather.gov/"
+              rel="external noopener noreferrer"
+              >NWS Temperature Maps <span class="arrow" aria-hidden="true">↗</span
+              ><span class="sr-only"> (external site)</span></a
+            >
+          </p>
+        </details>
+      </section>
+    </main>
+
+    <footer class="footer" aria-label="Context">
+      <div class="wrap">
+        <p>
+          Daylight: 9h 00m<span aria-hidden="true"> • </span>Moon: Waxing gibbous
+        </p>
+        <p class="footer-links">
+          <a href="/how-we-know/">How we know</a
+          ><span aria-hidden="true"> · </span><a href="/daily/">Daily archive</a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

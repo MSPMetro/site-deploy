@@ -1,0 +1,62 @@
+---
+- name: Publish current briefing snapshot to IPFS + IPNS
+  hosts: mspmetro_ipfs
+  become: true
+  gather_facts: false
+
+  vars:
+    mspmetro_brief_root: /var/www/mspmetro-brief
+    ipns_key_name: "{{ lookup('env', 'IPNS_KEY_NAME') | default('mspmetro', true) }}"
+    ipns_lifetime: "{{ lookup('env', 'IPNS_LIFETIME') | default('168h', true) }}"
+
+  tasks:
+    - name: Ensure ipfs is installed
+      ansible.builtin.command: ipfs version
+      register: ipfs_version
+      changed_when: false
+
+    - name: Ensure ipfs daemon is active
+      ansible.builtin.command: systemctl is-active ipfs
+      register: ipfs_active
+      changed_when: false
+
+    - name: Ensure IPNS key exists
+      become_user: ipfs
+      environment:
+        IPFS_PATH: /var/lib/ipfs
+        HOME: /var/lib/ipfs
+        XDG_CONFIG_HOME: /var/lib/ipfs/.config
+      ansible.builtin.shell: |
+        set -euo pipefail
+        if ipfs key list -l | awk '{print $2}' | rg -qx "{{ ipns_key_name }}"; then
+          exit 0
+        fi
+        ipfs key gen "{{ ipns_key_name }}" >/dev/null
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Add current snapshot to IPFS and publish IPNS
+      become_user: ipfs
+      environment:
+        IPFS_PATH: /var/lib/ipfs
+        HOME: /var/lib/ipfs
+        XDG_CONFIG_HOME: /var/lib/ipfs/.config
+      ansible.builtin.shell: |
+        set -euo pipefail
+        SNAP="$(readlink -f "{{ mspmetro_brief_root }}/current")"
+        CID="$(ipfs add -r -Q --cid-version=1 "$SNAP")"
+        ipfs name publish --key "{{ ipns_key_name }}" --lifetime "{{ ipns_lifetime }}" "/ipfs/${CID}" >/dev/null
+        KEY_ID="$(ipfs key list -l | awk -v key="{{ ipns_key_name }}" '$2 == key {print $1; exit 0}')"
+        printf '%s\n' "cid=${CID}" "ipns_key={{ ipns_key_name }}" "ipns_id=${KEY_ID}"
+      args:
+        executable: /bin/bash
+      register: ipns_publish
+      changed_when: true
+
+    - name: Print IPNS result
+      ansible.builtin.debug:
+        msg:
+          - "{{ ipfs_version.stdout }}"
+          - "{{ ipfs_active.stdout }}"
+          - "{{ ipns_publish.stdout_lines | default([]) }}"

@@ -1,0 +1,40 @@
+[mspmetro_edges:children]
+mspmetro_edge_eur
+mspmetro_edge_us
+
+[mspmetro_edges:vars]
+ansible_user=root
+
+[mspmetro_origins]
+# Pseudo-hosts (local connection) so origin publishing is visible in PLAY RECAP.
+origin_global ansible_connection=local mspmetro_publish_target=publish-edge-global
+origin_world ansible_connection=local mspmetro_publish_target=publish-edge-world
+origin_earth ansible_connection=local mspmetro_publish_target=publish-edge-earth
+
+[local]
+localhost ansible_connection=local
+
+[mspmetro_edge_eur]
+edge.eur.mspmetro.com mspmetro_caddy_site=edge.eur.mspmetro.com
+
+[mspmetro_edge_global_extra]
+# edge.global.mspmetro.com is reserved but not currently reachable from here.
+# Uncomment once the host is live (or add ansible_host=...).
+# edge.global.mspmetro.com mspmetro_caddy_site=edge.global.mspmetro.com
+
+[mspmetro_edge_world_extra]
+# edge.world.mspmetro.com is reserved but not currently in DNS.
+# Uncomment once the host is live (or add ansible_host=...).
+# edge.world.mspmetro.com mspmetro_caddy_site=edge.world.mspmetro.com
+
+[mspmetro_edge_eur_extra]
+# edge.eu2.mspmetro.com is reserved but not currently reachable from DNS.
+# Uncomment once the host is live (or add ansible_host=...).
+# edge.eu2.mspmetro.com mspmetro_caddy_site=edge.eu2.mspmetro.com
+
+[mspmetro_edge_us]
+edge.us.mspmetro.com mspmetro_caddy_site=edge.us.mspmetro.com
+
+[mspmetro_ipfs]
+edge.us.mspmetro.com
+edge.eur.mspmetro.com

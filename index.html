@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="A calm, accessible daily dashboard for news, transit, weather, and events."
+    />
+
+    <link rel="stylesheet" href="/static/css/daily.css" />
+    <link
+      rel="preload"
+      href="/static/fonts/AtkinsonHyperlegibleNext-Regular.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/static/fonts/AtkinsonHyperlegibleNext-Bold.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link rel="icon" type="image/png" href="/static/favicon.png" />
+    <link rel="apple-touch-icon" href="/static/favicon.png" />
+    <title>MSPMetro — Daily</title>
+  </head>
+  <body id="top">
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="orientation" aria-label="Orientation">
+      <div class="wrap">
+        <dl class="orientation-grid">
+          <div>
+            <dt>Day</dt>
+            <dd>Wednesday</dd>
+          </div>
+          <div>
+            <dt>Date</dt>
+            <dd>December 17, 2025</dd>
+          </div>
+          <div>
+            <dt>Region</dt>
+            <dd>Twin Cities</dd>
+          </div>
+          <div>
+            <dt>Weather</dt>
+            <dd>
+              32°F <span class="muted">(feels 26°F)</span>
+              <span aria-hidden="true">•</span> Snow after 7pm
+            </dd>
+          </div>
+          <div>
+            <dt>Sunset</dt>
+            <dd>4:36pm</dd>
+          </div>
+        </dl>
+      </div>
+      <a class="brand" href="/" aria-label="MSPMetro home">
+        <img
+          src="/static/Logo_SVG.svg"
+          alt=""
+          aria-hidden="true"
+          width="96"
+          height="96"
+        />
+      </a>
+    </header>
+
+    <nav class="top-nav" aria-label="Primary">
+      <div class="wrap">
+        <a href="/#weather">Weather</a> · <a href="/#metro">Metro</a> ·
+        <a href="/#world">World</a> · <a href="/#neighbors">Neighbors</a> ·
+        <a href="/#transit">Transit</a> · <a href="/#events">Events</a>
+      </div>
+    </nav>
+
+    <main id="main" class="wrap" tabindex="-1">
+      <h1 class="sr-only">MSPMetro Daily Dashboard</h1>
+
+      <section class="status" aria-label="City status">
+        <p class="status__line">
+          <span class="status__label">CITY STATUS:</span> Normal operations<span
+            aria-hidden="true"
+            > · </span
+          >No declared emergencies
+        </p>
+      </section>
+
+      <section class="alerts" aria-live="polite" aria-atomic="true">
+        <h2 class="kicker" id="alerts-title">ALERTS</h2>
+        <ul class="alert-list" hidden aria-labelledby="alerts-title">
+          <li>
+            <span class="alert-pill" data-severity="advisory">Advisory</span>
+            Winter weather advisory in effect after 7pm; allow extra travel time
+            <span class="alert-source"
+              >Source: National Weather Service (Tier 1)</span
+            >
+          </li>
+          <li>
+            <span class="alert-pill" data-severity="info">Info</span> Minor
+            transit delays possible this evening
+            <span class="alert-source">Source: Metro Transit (Tier 1)</span>
+          </li>
+        </ul>
+        <p class="empty-state">No current alerts or disruptions</p>
+      </section>
+
+      <section class="glance" aria-label="Today at a glance">
+        <h2 class="kicker" id="glance-title">TODAY AT A GLANCE</h2>
+        <ul class="brief-list" aria-labelledby="glance-title">
+          <li>Snow likely after 7pm; allow extra time for evening errands.</li>
+          <li>Morning roads may refreeze; watch sidewalks and curb cuts.</li>
+          <li>Transit may run slower during the evening peak.</li>
+          <li>Plan sunset earlier than 4:40pm for outdoor stops.</li>
+        </ul>
+      </section>
+
+      <section class="before" aria-label="Before you go">
+        <h2 class="kicker" id="before-title">BEFORE YOU GO</h2>
+        <ul class="brief-list" aria-labelledby="before-title">
+          <li>Charge devices earlier; cold drains batteries faster.</li>
+          <li>Keep a small traction aid if you expect icy sidewalks.</li>
+          <li>For airport runs, check de-icing delays before leaving.</li>
+        </ul>
+      </section>
+
+      <section id="summary" aria-label="Summary">
+        <div class="grid" aria-label="Daily sections">
+          <section id="weather" class="card" aria-labelledby="weather-title">
+            <h2 class="kicker" id="weather-title">WEATHER</h2>
+            <ul class="link-list">
+              <li>
+                <a href="/weather/#advisory"
+                  >Advisory After 7pm
+                  <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a href="/weather/#gusts-update"
+                  >Gusts Revised Upward
+                  <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://forecast.weather.gov/"
+                  rel="external noopener noreferrer"
+                  >NWS Forecast <span class="arrow" aria-hidden="true">↗</span
+                  ><span class="sr-only"> (external site)</span></a
+                >
+              </li>
+            </ul>
+            <a class="see-all" href="/weather/"
+              >SEE ALL <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </section>
+
+          <section id="metro" class="card" aria-labelledby="metro-title">
+            <h2 class="kicker" id="metro-title">
+              <a href="/metro/"
+                >METRO <span class="arrow" aria-hidden="true">→</span></a
+              >
+            </h2>
+            <ul class="link-list">
+              <li>
+                <a href="/metro/#hennepin"
+                  >Hennepin County Brief
+                  <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a href="/metro/#ramsey"
+                  >Ramsey County Notices
+                  <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a href="/metro/#index"
+                  >County Index <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+            </ul>
+            <a class="see-all" href="/metro/"
+              >SEE ALL <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </section>
+
+          <section id="world" class="card" aria-labelledby="world-title">
+            <h2 class="kicker" id="world-title">
+              <a href="/world/"
+                >WORLD <span class="arrow" aria-hidden="true">→</span></a
+              >
+            </h2>
+            <ul class="link-list">
+              <li>
+                <a href="/world/#brief"
+                  >Overnight Developments
+                  <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a href="/world/#markets"
+                  >Markets and Policy Signals
+                  <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://www.reuters.com/world/"
+                  rel="external noopener noreferrer"
+                  >Reuters World <span class="arrow" aria-hidden="true">↗</span
+                  ><span class="sr-only"> (external site)</span></a
+                >
+              </li>
+            </ul>
+            <a class="see-all" href="/world/"
+              >SEE ALL <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </section>
+
+          <section id="neighbors" class="card" aria-labelledby="neighbors-title">
+            <h2 class="kicker" id="neighbors-title">
+              <a href="/neighbors/"
+                >NEIGHBORS <span class="arrow" aria-hidden="true">→</span></a
+              >
+            </h2>
+            <ul class="link-list">
+              <li>
+                <a href="/neighbors/#powderhorn"
+                  >Powderhorn <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a href="/neighbors/#whittier"
+                  >Whittier <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a href="/neighbors/#frogtown"
+                  >Frogtown <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+            </ul>
+            <a class="see-all" href="/neighbors/"
+              >SEE ALL <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </section>
+
+          <section id="transit" class="card" aria-labelledby="transit-title">
+            <h2 class="kicker" id="transit-title">
+              <a href="/transit/"
+                >TRANSIT <span class="arrow" aria-hidden="true">→</span></a
+              >
+            </h2>
+            <ul class="link-list">
+              <li>
+                <a href="/transit/#light-rail"
+                  >Light Rail <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a href="/transit/#highways"
+                  >Highways <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a href="/transit/#airport"
+                  >Airport <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+            </ul>
+            <a class="see-all" href="/transit/"
+              >SEE ALL <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </section>
+
+          <section id="events" class="card" aria-labelledby="events-title">
+            <h2 class="kicker" id="events-title">
+              <a href="/events/"
+                >EVENTS <span class="arrow" aria-hidden="true">→</span></a
+              >
+            </h2>
+            <ul class="link-list">
+              <li>
+                <a href="/events/#today"
+                  >Today <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a href="/events/#weekend"
+                  >This Weekend <span class="arrow" aria-hidden="true">→</span></a
+                >
+              </li>
+              <li>
+                <a
+                  href="https://www.minneapolis.org/calendar/"
+                  rel="external noopener noreferrer"
+                  >City Calendar <span class="arrow" aria-hidden="true">↗</span
+                  ><span class="sr-only"> (external site)</span></a
+                >
+              </li>
+            </ul>
+            <a class="see-all" href="/events/"
+              >SEE ALL <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </section>
+        </div>
+      </section>
+
+      <section class="sampling" aria-labelledby="picks-title">
+        <h2 class="kicker" id="picks-title">PICKS</h2>
+        <div class="grid" aria-label="Quick picks by section">
+          <section class="card card--pick" aria-labelledby="pick-weather-title">
+            <h3 class="kicker" id="pick-weather-title">WEATHER</h3>
+            <ul class="link-list">
+              <li>
+                <a href="/weather/#advisory"
+                  >Advisory Details <span class="arrow" aria-hidden="true">→</span></a
+                >
+                <span class="pick-note">What it means for travel after 7pm.</span>
+              </li>
+              <li>
+                <a href="/weather/#gusts-update"
+                  >Wind Gusts <span class="arrow" aria-hidden="true">→</span></a
+                >
+                <span class="pick-note">Gusts change how cold “feels” quickly.</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="card card--pick" aria-labelledby="pick-metro-title">
+            <h3 class="kicker" id="pick-metro-title">METRO</h3>
+            <ul class="link-list">
+              <li>
+                <a href="/metro/#hennepin"
+                  >Hennepin County Brief
+                  <span class="arrow" aria-hidden="true">→</span></a
+                >
+                <span class="pick-note">Parking rules and service notices.</span>
+              </li>
+              <li>
+                <a href="/metro/#ramsey"
+                  >Ramsey County Brief
+                  <span class="arrow" aria-hidden="true">→</span></a
+                >
+                <span class="pick-note">Meeting changes and county updates.</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="card card--pick" aria-labelledby="pick-world-title">
+            <h3 class="kicker" id="pick-world-title">WORLD</h3>
+            <ul class="link-list">
+              <li>
+                <a
+                  href="https://www.reuters.com/world/"
+                  rel="external noopener noreferrer"
+                  >World Brief <span class="arrow" aria-hidden="true">↗</span
+                  ><span class="sr-only"> (external site)</span></a
+                >
+                <span class="pick-note">A fast scan for high‑impact developments.</span>
+              </li>
+              <li>
+                <a
+                  href="https://apnews.com/"
+                  rel="external noopener noreferrer"
+                  >Top Stories <span class="arrow" aria-hidden="true">↗</span
+                  ><span class="sr-only"> (external site)</span></a
+                >
+                <span class="pick-note">Useful background if something breaks late.</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="card card--pick" aria-labelledby="pick-neighbors-title">
+            <h3 class="kicker" id="pick-neighbors-title">NEIGHBORS</h3>
+            <ul class="link-list">
+              <li>
+                <a href="/neighbors/#powderhorn"
+                  >Powderhorn Updates
+                  <span class="arrow" aria-hidden="true">→</span></a
+                >
+                <span class="pick-note">Snow rules and rec center notes.</span>
+              </li>
+              <li>
+                <a href="/neighbors/#whittier"
+                  >Whittier Updates <span class="arrow" aria-hidden="true">→</span></a
+                >
+                <span class="pick-note">Closures and meeting reschedules.</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="card card--pick" aria-labelledby="pick-transit-title">
+            <h3 class="kicker" id="pick-transit-title">TRANSIT</h3>
+            <ul class="link-list">
+              <li>
+                <a href="/transit/#light-rail"
+                  >Light Rail Status
+                  <span class="arrow" aria-hidden="true">→</span></a
+                >
+                <span class="pick-note">Best quick signal for evening delays.</span>
+              </li>
+              <li>
+                <a href="/transit/#highways"
+                  >Highways <span class="arrow" aria-hidden="true">→</span></a
+                >
+                <span class="pick-note">Incidents and slowdowns that affect timing.</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="card card--pick" aria-labelledby="pick-events-title">
+            <h3 class="kicker" id="pick-events-title">EVENTS</h3>
+            <ul class="link-list">
+              <li>
+                <a href="/events/#today"
+                  >Today’s Picks <span class="arrow" aria-hidden="true">→</span></a
+                >
+                <span class="pick-note">A short list you can act on tonight.</span>
+              </li>
+              <li>
+                <a href="/events/#weekend"
+                  >This Weekend <span class="arrow" aria-hidden="true">→</span></a
+                >
+                <span class="pick-note">Plan around weather and closures early.</span>
+              </li>
+            </ul>
+          </section>
+        </div>
+      </section>
+
+      <p class="what-changed" id="what-changed">Updated recently: 3 items</p>
+    </main>
+
+    <footer class="footer" aria-label="Context">
+      <div class="wrap">
+        <p>
+          Daylight: 9h 00m<span aria-hidden="true"> • </span>Moon: Waxing gibbous
+        </p>
+        <p class="footer-links">
+          <a href="/how-we-know/">How we know</a
+          ><span aria-hidden="true"> · </span><a href="/daily/">Daily archive</a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

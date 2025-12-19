@@ -1,0 +1,62 @@
+# MSPMetro Source Seeds (Twin Cities / MN)
+#
+# One URL per line. The discovery script will attempt to find RSS/Atom feeds and
+# pull a small sample of recent items (title/url/author when available).
+#
+# Add more sources here over time; this is intentionally allowlist-only.
+
+# Major local news
+# (Exclude paywalled outlets; see denylist_paywalled_domains.txt)
+https://www.twincities.com/
+https://www.mprnews.org/
+https://www.minnpost.com/
+https://sahanjournal.com/
+https://bringmethenews.com/
+https://unicornriot.ninja/
+https://minnesotareformer.com/
+https://theuptake.org/
+https://heavytable.com/
+https://racketmn.com/
+https://www.axios.com/local/twin-cities
+https://www.hometownsource.com/
+
+# Local TV news
+https://www.cbsnews.com/minnesota/
+https://kstp.com/
+https://www.kare11.com/
+https://www.tpt.org/
+
+# Local papers / community
+https://spokesman-recorder.com/
+https://tcbmag.com/
+https://www.mndaily.com/
+https://thecurrent.org/
+https://www.minnesotamonthly.com/
+https://www.southwestvoices.news/
+https://www.southsidepride.com/
+
+# Local blogs / civic
+https://streets.mn/
+
+# City / government
+https://www.minneapolismn.gov/
+https://www.stpaul.gov/
+https://metrocouncil.org/
+https://mn.gov/governor/
+https://www.hennepin.us/
+https://www.ramseycounty.us/
+https://www.dot.state.mn.us/
+
+# Transit / operations
+https://www.metrotransit.org/
+https://www.511mn.org/
+https://www.mspairport.com/
+
+# Events / venues (may not have RSS; still useful as references)
+https://www.first-avenue.com/
+https://www.guthrietheater.org/
+https://www.walkerart.org/
+https://new.artsmia.org/
+https://www.thecedar.org/
+https://www.minneapolis.org/
+https://www.visitsaintpaul.com/

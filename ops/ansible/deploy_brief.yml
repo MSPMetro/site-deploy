@@ -1,0 +1,283 @@
+---
+- name: Publish briefing site to origins
+  hosts: mspmetro_origins
+  connection: local
+  gather_facts: false
+
+  vars:
+    repo_root: "{{ playbook_dir }}/../.."
+
+  tasks:
+    - name: Compute shared publish version
+      ansible.builtin.command: >-
+        python3 -c "from datetime import datetime,timezone; print(datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ'))"
+      args:
+        chdir: "{{ repo_root }}"
+      register: publish_version_cmd
+      changed_when: false
+      run_once: true
+      delegate_to: localhost
+
+    - name: Set publish version fact
+      ansible.builtin.set_fact:
+        mspmetro_publish_version: "{{ publish_version_cmd.stdout }}"
+      run_once: true
+      delegate_to: localhost
+      delegate_facts: true
+
+    - name: Publish to origin (S3-compatible)
+      ansible.builtin.command: "make {{ mspmetro_publish_target }}"
+      args:
+        chdir: "{{ repo_root }}"
+      environment:
+        PUBLISH_VERSION: "{{ hostvars['localhost'].mspmetro_publish_version }}"
+      changed_when: true
+      when: mspmetro_publish_target is defined and (mspmetro_publish_target | length) > 0
+
+- name: Configure and trigger pull on edges
+  hosts: mspmetro_edges
+  become: true
+
+  vars:
+    mspmetro_brief_root: /var/www/mspmetro-brief
+    mspmetro_brief_env_file: /etc/default/cityfeed-puller-brief
+    mspmetro_brief_unit: cityfeed-puller-brief
+    mspmetro_brief_user: caddy
+    mspmetro_brief_group: caddy
+
+    # Origins are read from the controller environment (usually via `.env`).
+    edge_global_origin: >-
+      {{
+        lookup('env', 'EDGE_GLOBAL_ORIGIN')
+        | default(lookup('env', 'ORIGIN_BASE_URL'), true)
+        | default(lookup('env', 'PUBLISH_ORIGIN_GLOBAL'), true)
+        | default(lookup('env', 'ORIGIN_GLOBAL'), true)
+      }}
+    edge_world_origin: >-
+      {{
+        lookup('env', 'EDGE_WORLD_ORIGIN')
+        | default(lookup('env', 'DO_ORIGIN_BASE_URL'), true)
+        | default(lookup('env', 'PUBLISH_ORIGIN_WORLD'), true)
+        | default(lookup('env', 'ORIGIN_WORLD'), true)
+      }}
+    edge_earth_origin: >-
+      {{
+        lookup('env', 'EDGE_EARTH_ORIGIN')
+        | default(lookup('env', 'EARTH_ORIGIN_BASE_URL'), true)
+        | default(lookup('env', 'PUBLISH_ORIGIN_EARTH'), true)
+        | default(lookup('env', 'ORIGIN_EARTH'), true)
+      }}
+
+  tasks:
+    - name: Ensure both origins are configured (required for redundancy)
+      ansible.builtin.assert:
+        that:
+          - edge_global_origin | length > 0
+          - edge_world_origin | length > 0
+        fail_msg: "Missing origin(s); set PUBLISH_ORIGIN_GLOBAL and PUBLISH_ORIGIN_WORLD in .env before deploying."
+
+    - name: Select briefing origin for this edge
+      ansible.builtin.set_fact:
+        mspmetro_brief_origin_primary: >-
+          {{
+            (
+              (
+                ('mspmetro_edge_us' in group_names)
+                or ('mspmetro_edge_world' in group_names)
+              )
+              and (edge_world_origin | length > 0)
+            )
+            | ternary(edge_world_origin, edge_global_origin)
+          }}
+        mspmetro_brief_origin_secondary: >-
+          {{
+            (
+              (
+                ('mspmetro_edge_us' in group_names)
+                or ('mspmetro_edge_world' in group_names)
+              )
+              and (edge_world_origin | length > 0)
+            )
+            | ternary(edge_global_origin, edge_world_origin)
+          }}
+        mspmetro_brief_origin_tertiary: "{{ edge_earth_origin }}"
+
+    - name: Ensure cityfeed-puller is installed
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../target/release/cityfeed-puller"
+        dest: /usr/local/bin/cityfeed-puller
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install puller wrapper (brief)
+      ansible.builtin.template:
+        src: templates/cityfeed-puller-brief.run.sh.j2
+        dest: /usr/local/bin/cityfeed-puller-brief-run
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Ensure briefing root exists
+      ansible.builtin.file:
+        path: "{{ mspmetro_brief_root }}"
+        state: directory
+        owner: "{{ mspmetro_brief_user }}"
+        group: "{{ mspmetro_brief_group }}"
+        mode: "0755"
+
+    - name: Ensure briefing tree ownership is consistent
+      ansible.builtin.file:
+        path: "{{ mspmetro_brief_root }}"
+        state: directory
+        owner: "{{ mspmetro_brief_user }}"
+        group: "{{ mspmetro_brief_group }}"
+        recurse: true
+
+    - name: Ensure briefing snapshots dir exists and is writable
+      ansible.builtin.file:
+        path: "{{ mspmetro_brief_root }}/snapshots"
+        state: directory
+        owner: "{{ mspmetro_brief_user }}"
+        group: "{{ mspmetro_brief_group }}"
+        mode: "0755"
+
+    - name: Write briefing puller env file
+      ansible.builtin.template:
+        src: templates/cityfeed-puller-brief.env.j2
+        dest: "{{ mspmetro_brief_env_file }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install systemd unit (brief puller)
+      ansible.builtin.template:
+        src: templates/cityfeed-puller-brief.service.j2
+        dest: "/etc/systemd/system/{{ mspmetro_brief_unit }}.service"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install systemd timer (brief puller)
+      ansible.builtin.template:
+        src: templates/cityfeed-puller-brief.timer.j2
+        dest: "/etc/systemd/system/{{ mspmetro_brief_unit }}.timer"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable timer
+      ansible.builtin.systemd:
+        name: "{{ mspmetro_brief_unit }}.timer"
+        enabled: true
+        state: started
+
+    - name: Pull now
+      ansible.builtin.systemd:
+        name: "{{ mspmetro_brief_unit }}.service"
+        state: started
+
+    - name: Point Caddy static root at briefing snapshots
+      ansible.builtin.replace:
+        path: /etc/caddy/Caddyfile
+        regexp: 'root \* /var/www/mspmetro/current'
+        replace: 'root * /var/www/mspmetro-brief/current'
+        backup: true
+      register: caddy_root_replace
+      changed_when: caddy_root_replace.changed
+
+    - name: Reload Caddy if config changed
+      ansible.builtin.systemd:
+        name: caddy
+        state: reloaded
+      when: caddy_root_replace is defined and caddy_root_replace.changed
+
+- name: Publish latest snapshot to IPFS + IPNS (optional)
+  hosts: mspmetro_ipfs
+  become: true
+  gather_facts: false
+
+  vars:
+    mspmetro_brief_root: /var/www/mspmetro-brief
+    ipns_key_name: "{{ lookup('env', 'IPNS_KEY_NAME') | default('mspmetro', true) }}"
+    ipns_lifetime: "{{ lookup('env', 'IPNS_LIFETIME') | default('168h', true) }}"
+    mspmetro_ipns_unit: mspmetro-ipns
+
+  tasks:
+    - name: Ensure ipfs is installed
+      ansible.builtin.command: ipfs version
+      register: ipfs_version
+      changed_when: false
+
+    - name: Ensure ipfs daemon is active
+      ansible.builtin.command: systemctl is-active ipfs
+      register: ipfs_active
+      changed_when: false
+
+    - name: Write IPNS env file
+      ansible.builtin.template:
+        src: templates/mspmetro-ipns.env.j2
+        dest: /etc/default/mspmetro-ipns
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install systemd unit (IPNS publisher)
+      ansible.builtin.template:
+        src: templates/mspmetro-ipns.service.j2
+        dest: "/etc/systemd/system/{{ mspmetro_ipns_unit }}.service"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install systemd timer (IPNS publisher)
+      ansible.builtin.template:
+        src: templates/mspmetro-ipns.timer.j2
+        dest: "/etc/systemd/system/{{ mspmetro_ipns_unit }}.timer"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd (IPNS publisher)
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable IPNS timer
+      ansible.builtin.systemd:
+        name: "{{ mspmetro_ipns_unit }}.timer"
+        enabled: true
+        state: started
+
+    - name: Ensure IPNS key exists
+      become_user: ipfs
+      environment:
+        IPFS_PATH: /var/lib/ipfs
+        HOME: /var/lib/ipfs
+        XDG_CONFIG_HOME: /var/lib/ipfs/.config
+      ansible.builtin.shell: |
+        set -euo pipefail
+        if ipfs key list -l | awk '{print $2}' | rg -qx "{{ ipns_key_name }}"; then
+          exit 0
+        fi
+        ipfs key gen "{{ ipns_key_name }}" >/dev/null
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Publish IPNS now
+      ansible.builtin.systemd:
+        name: "{{ mspmetro_ipns_unit }}.service"
+        state: started
+      register: ipns_publish
+      changed_when: true
+
+    - name: Print IPNS result
+      ansible.builtin.debug:
+        msg:
+          - "{{ ipfs_version.stdout }}"
+          - "{{ ipfs_active.stdout }}"
+          - "published: {{ ipns_key_name }}"

@@ -1,0 +1,168 @@
+---
+- name: Fetch latest manifest versions from origins
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    edge_global_origin: >-
+      {{
+        lookup('env', 'EDGE_GLOBAL_ORIGIN')
+        | default(lookup('env', 'ORIGIN_BASE_URL'), true)
+        | default(lookup('env', 'PUBLISH_ORIGIN_GLOBAL'), true)
+        | default(lookup('env', 'ORIGIN_GLOBAL'), true)
+      }}
+    edge_world_origin: >-
+      {{
+        lookup('env', 'EDGE_WORLD_ORIGIN')
+        | default(lookup('env', 'DO_ORIGIN_BASE_URL'), true)
+        | default(lookup('env', 'PUBLISH_ORIGIN_WORLD'), true)
+        | default(lookup('env', 'ORIGIN_WORLD'), true)
+      }}
+    edge_earth_origin: >-
+      {{
+        lookup('env', 'EDGE_EARTH_ORIGIN')
+        | default(lookup('env', 'EARTH_ORIGIN_BASE_URL'), true)
+        | default(lookup('env', 'PUBLISH_ORIGIN_EARTH'), true)
+        | default(lookup('env', 'ORIGIN_EARTH'), true)
+      }}
+
+  tasks:
+    - name: Ensure global origin is set
+      ansible.builtin.assert:
+        that:
+          - edge_global_origin | length > 0
+        fail_msg: "Global origin is empty; set PUBLISH_ORIGIN_GLOBAL (or EDGE_GLOBAL_ORIGIN)."
+
+    - name: Ensure world origin is set
+      ansible.builtin.assert:
+        that:
+          - edge_world_origin | length > 0
+        fail_msg: "World origin is empty; set PUBLISH_ORIGIN_WORLD (or EDGE_WORLD_ORIGIN)."
+
+    - name: Fetch global manifests/latest.json
+      ansible.builtin.uri:
+        url: "{{ edge_global_origin }}/manifests/latest.json"
+        method: GET
+        return_content: true
+      register: global_manifest
+
+    - name: Fetch world manifests/latest.json
+      ansible.builtin.uri:
+        url: "{{ edge_world_origin }}/manifests/latest.json"
+        method: GET
+        return_content: true
+      register: world_manifest
+
+    - name: Fetch earth manifests/latest.json (optional)
+      ansible.builtin.uri:
+        url: "{{ edge_earth_origin }}/manifests/latest.json"
+        method: GET
+        return_content: true
+      register: earth_manifest
+      when: edge_earth_origin | length > 0
+
+    - name: Set manifest versions
+      ansible.builtin.set_fact:
+        mspmetro_global_version: "{{ (global_manifest.content | from_json).version }}"
+        mspmetro_world_version: "{{ (world_manifest.content | from_json).version }}"
+
+    - name: Set earth manifest version (optional)
+      ansible.builtin.set_fact:
+        mspmetro_earth_version: "{{ (earth_manifest.content | from_json).version }}"
+      when: edge_earth_origin | length > 0
+
+    - name: Print versions
+      ansible.builtin.debug:
+        msg: >-
+          {{
+            [
+              "global origin: %s (version=%s)" | format(edge_global_origin, mspmetro_global_version),
+              "world  origin: %s (version=%s)" | format(edge_world_origin, mspmetro_world_version)
+            ]
+            + (
+              (edge_earth_origin | length > 0)
+              | ternary(
+                  ["earth  origin: %s (version=%s)" | format(edge_earth_origin, mspmetro_earth_version)],
+                  []
+                )
+            )
+          }}
+
+- name: Verify edge nodes are serving latest content
+  hosts: mspmetro_edges
+  become: true
+
+  vars:
+    mspmetro_brief_root: /var/www/mspmetro-brief
+    mspmetro_brief_unit: cityfeed-puller-brief
+
+  tasks:
+    - name: Choose expected version for this edge
+      ansible.builtin.set_fact:
+        expected_versions: >-
+          {{
+            (
+              ('mspmetro_edge_us' in group_names)
+              | ternary(
+                  [hostvars['localhost'].mspmetro_world_version, hostvars['localhost'].mspmetro_global_version],
+                  [hostvars['localhost'].mspmetro_global_version, hostvars['localhost'].mspmetro_world_version]
+                )
+            )
+          }}
+
+    - name: Ensure current symlink exists
+      ansible.builtin.stat:
+        path: "{{ mspmetro_brief_root }}/current"
+      register: current_link
+
+    - name: Assert current symlink exists
+      ansible.builtin.assert:
+        that:
+          - current_link.stat.exists
+        fail_msg: "Missing {{ mspmetro_brief_root }}/current; puller has not run successfully."
+
+    - name: Read current symlink target
+      ansible.builtin.command: "readlink -f {{ mspmetro_brief_root }}/current"
+      register: current_target
+      changed_when: false
+
+    - name: Derive current version from symlink target
+      ansible.builtin.set_fact:
+        current_version: "{{ current_target.stdout.split('/')[-1] }}"
+
+    - name: Assert current matches expected version
+      ansible.builtin.assert:
+        that:
+          - expected_versions | length > 0
+          - current_version in expected_versions
+        fail_msg: "current={{ current_target.stdout }} current_version={{ current_version }} expected_versions={{ expected_versions }}"
+
+    - name: Verify key files exist
+      ansible.builtin.command: "test -f {{ mspmetro_brief_root }}/current/index.html -a -f {{ mspmetro_brief_root }}/current/static/css/daily.css -a -f {{ mspmetro_brief_root }}/current/static/Logo_SVG.svg -a -f {{ mspmetro_brief_root }}/current/static/favicon.png"
+      changed_when: false
+
+    - name: Verify new front page marker exists (PICKS)
+      ansible.builtin.command: "rg -q \"\\bPICKS\\b\" {{ mspmetro_brief_root }}/current/index.html"
+      changed_when: false
+
+    - name: Verify CSS stability header exists
+      ansible.builtin.command: "rg -q \"FONT & RENDER STABILITY\" {{ mspmetro_brief_root }}/current/static/css/daily.css"
+      changed_when: false
+
+    - name: Verify puller timer is enabled
+      ansible.builtin.command: "systemctl is-enabled {{ mspmetro_brief_unit }}.timer"
+      register: timer_enabled
+      changed_when: false
+
+    - name: Verify puller timer is active
+      ansible.builtin.command: "systemctl is-active {{ mspmetro_brief_unit }}.timer"
+      register: timer_active
+      changed_when: false
+
+    - name: Print edge status
+      ansible.builtin.debug:
+        msg:
+          - "edge={{ inventory_hostname }} expected_versions={{ expected_versions }}"
+          - "current={{ current_target.stdout }}"
+          - "timer: enabled={{ timer_enabled.stdout }} active={{ timer_active.stdout }}"

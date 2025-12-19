@@ -1,0 +1,13 @@
+[Unit]
+Description=MSPMetro world origin public-read ACL enforcement
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User={{ mspmetro_repl_user }}
+Group={{ mspmetro_repl_user }}
+Environment=HOME={{ mspmetro_repl_home }}
+Environment=MC_CONFIG={{ mspmetro_repl_home }}/.mc/config.json
+EnvironmentFile=-/etc/default/mspmetro-minio-replicate-world
+ExecStart=/usr/bin/python3 /usr/local/bin/mspmetro-world-publicize.py

@@ -1,0 +1,15 @@
+/target/
+**/*.rs.bk
+.DS_Store
+.venv/
+.venv-publisher/
+backend/.venv/
+__pycache__/
+*.pyc
+.python-version
+/build/
+.env
+.env.*
+!.env.example
+/data/cache/
+/docs/source_discovery/*.json

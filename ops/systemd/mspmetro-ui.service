@@ -1,0 +1,19 @@
+[Unit]
+Description=MSPMetro UI (Axum + Dioxus SSR)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=caddy
+Group=caddy
+WorkingDirectory=/opt/mspmetro-ssr/cityfeed_pull
+Environment=RUST_LOG=mspmetro_ui=info,tower_http=info
+EnvironmentFile=-/etc/default/mspmetro-ui
+ExecStart=/usr/local/bin/mspmetro-ui
+Restart=on-failure
+RestartSec=3
+UMask=0022
+
+[Install]
+WantedBy=multi-user.target

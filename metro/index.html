@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Metro briefing: Minneapolis–Saint Paul daily civic updates."
+    />
+
+    <link rel="stylesheet" href="/static/css/daily.css" />
+    <link
+      rel="preload"
+      href="/static/fonts/AtkinsonHyperlegibleNext-Regular.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/static/fonts/AtkinsonHyperlegibleNext-Bold.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link rel="icon" type="image/png" href="/static/favicon.png" />
+    <link rel="apple-touch-icon" href="/static/favicon.png" />
+    <title>MSPMetro — Metro</title>
+  </head>
+  <body id="top">
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="orientation" aria-label="Orientation">
+      <div class="wrap">
+        <dl class="orientation-grid">
+          <div>
+            <dt>Day</dt>
+            <dd>Wednesday</dd>
+          </div>
+          <div>
+            <dt>Date</dt>
+            <dd>December 17, 2025</dd>
+          </div>
+          <div>
+            <dt>Region</dt>
+            <dd>Twin Cities</dd>
+          </div>
+          <div>
+            <dt>Weather</dt>
+            <dd>
+              32°F <span class="muted">(feels 26°F)</span>
+              <span aria-hidden="true">•</span> Snow after 7pm
+            </dd>
+          </div>
+          <div>
+            <dt>Sunset</dt>
+            <dd>4:36pm</dd>
+          </div>
+        </dl>
+      </div>
+      <a class="brand" href="/" aria-label="MSPMetro home">
+        <img
+          src="/static/Logo_SVG.svg"
+          alt=""
+          aria-hidden="true"
+          width="96"
+          height="96"
+        />
+      </a>
+    </header>
+
+    <nav class="top-nav" aria-label="Primary">
+      <div class="wrap">
+        <a href="/weather/">Weather</a> · <a href="/metro/">Metro</a> ·
+        <a href="/world/">World</a> · <a href="/neighbors/">Neighbors</a> ·
+        <a href="/transit/">Transit</a> · <a href="/events/">Events</a>
+      </div>
+    </nav>
+
+    <main id="main" class="wrap" tabindex="-1">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Daily briefing</a>
+      </nav>
+
+      <header class="section-header">
+        <h1>Metro — Twin Cities Metropolitan Area</h1>
+        <p class="section-meta">Updated 18 minutes ago</p>
+      </header>
+
+      <nav class="subnav" aria-label="Counties">
+        <a href="#anoka">Anoka</a> · <a href="#carver">Carver</a> ·
+        <a href="#dakota">Dakota</a> · <a href="#hennepin">Hennepin</a> ·
+        <a href="#ramsey">Ramsey</a> · <a href="#scott">Scott</a> ·
+        <a href="#washington">Washington</a>
+      </nav>
+
+      <section class="briefing" aria-label="Section brief">
+        <h2 class="kicker" id="section-brief-title">SECTION BRIEF</h2>
+        <ul class="brief-list" aria-labelledby="section-brief-title">
+          <li>Seven-county brief: government actions, infrastructure, and notices.</li>
+          <li>High-impact updates only; no raw tables or vendor dashboards.</li>
+          <li>All items retain explicit source attribution.</li>
+        </ul>
+      </section>
+
+      <section class="watching" aria-label="What we are watching">
+        <h2 class="kicker" id="watching-title">WHAT WE’RE WATCHING</h2>
+        <ul class="brief-list" aria-labelledby="watching-title">
+          <li>Any county-level emergency declarations or escalations.</li>
+          <li>Infrastructure advisories that change travel plans today.</li>
+          <li>Public health notices posted late afternoon.</li>
+        </ul>
+      </section>
+
+      <section id="index" class="index-block" aria-label="County index">
+        <h2 class="kicker" id="index-title">COUNTY INDEX</h2>
+        <ul class="article-index" aria-labelledby="index-title">
+          <li>
+            <a href="#anoka"
+              >Anoka County <span class="arrow" aria-hidden="true">→</span></a
+            >
+            <p class="dek">Board actions, advisories, and high-impact notices.</p>
+            <p class="meta-line">Updated today</p>
+          </li>
+          <li>
+            <a href="#carver"
+              >Carver County <span class="arrow" aria-hidden="true">→</span></a
+            >
+            <p class="dek">Infrastructure and service notices.</p>
+            <p class="meta-line">Updated today</p>
+          </li>
+          <li>
+            <a href="#dakota"
+              >Dakota County <span class="arrow" aria-hidden="true">→</span></a
+            >
+            <p class="dek">Public meetings and county services.</p>
+            <p class="meta-line">Updated today</p>
+          </li>
+          <li>
+            <a href="#hennepin"
+              >Hennepin County <span class="arrow" aria-hidden="true">→</span></a
+            >
+            <p class="dek">County board, public health, and closures.</p>
+            <p class="meta-line">Updated 18 minutes ago</p>
+          </li>
+          <li>
+            <a href="#ramsey"
+              >Ramsey County <span class="arrow" aria-hidden="true">→</span></a
+            >
+            <p class="dek">County notices and service changes.</p>
+            <p class="meta-line">Updated 30 minutes ago</p>
+          </li>
+          <li>
+            <a href="#scott"
+              >Scott County <span class="arrow" aria-hidden="true">→</span></a
+            >
+            <p class="dek">Courts, infrastructure, and public notices.</p>
+            <p class="meta-line">Updated today</p>
+          </li>
+          <li>
+            <a href="#washington"
+              >Washington County <span class="arrow" aria-hidden="true">→</span></a
+            >
+            <p class="dek">County services and advisories.</p>
+            <p class="meta-line">Updated today</p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="details" aria-label="County briefs">
+        <section id="anoka" class="county" aria-labelledby="anoka-h">
+          <h2 id="anoka-h">Anoka County</h2>
+          <ul class="county-list">
+            <li>
+              County service notices posted for today
+              <span class="item-meta"
+                >Type: Status · Updated today · Expires: After 24 hours</span
+              >
+              <span class="source-inline">Source: Anoka County (Tier 1)</span>
+            </li>
+            <li>
+              Emergency management updates monitored for evening weather
+              <span class="item-meta"
+                >Type: Status · Updated today · Expires: When condition ends</span
+              >
+              <span class="source-inline"
+                >Source: County emergency management (Tier 1)</span
+              >
+            </li>
+          </ul>
+          <p class="back">
+            <a href="#index"
+              >Back to index <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </p>
+        </section>
+
+        <section id="carver" class="county" aria-labelledby="carver-h">
+          <h2 id="carver-h">Carver County</h2>
+          <ul class="county-list">
+            <li>
+              Infrastructure and road advisories reviewed for tonight
+              <span class="item-meta"
+                >Type: Advisory · Updated today · Expires: When condition ends</span
+              >
+              <span class="source-inline">Source: Carver County (Tier 1)</span>
+            </li>
+            <li>
+              Public meeting calendar posted
+              <span class="item-meta"
+                >Type: Schedule · Updated today · Expires: When event passes</span
+              >
+              <span class="source-inline">Source: County calendar (Tier 1)</span>
+            </li>
+          </ul>
+          <p class="back">
+            <a href="#index"
+              >Back to index <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </p>
+        </section>
+
+        <section id="dakota" class="county" aria-labelledby="dakota-h">
+          <h2 id="dakota-h">Dakota County</h2>
+          <ul class="county-list">
+            <li>
+              County board meeting today; agenda highlights posted
+              <span class="item-meta"
+                >Type: Schedule · Updated today · Expires: When event passes</span
+              >
+              <span class="source-inline">Source: Dakota County (Tier 1)</span>
+            </li>
+            <li>
+              Service hours monitored for weather impacts
+              <span class="item-meta"
+                >Type: Status · Updated today · Expires: When condition ends</span
+              >
+              <span class="source-inline">Source: County services (Tier 1)</span>
+            </li>
+          </ul>
+          <p class="back">
+            <a href="#index"
+              >Back to index <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </p>
+        </section>
+
+        <section id="hennepin" class="county" aria-labelledby="hennepin-h">
+          <h2 id="hennepin-h">Hennepin County</h2>
+          <ul class="county-list">
+            <li>
+              County board meeting today at 1pm
+              <span class="item-meta"
+                >Type: Schedule · Updated today · Expires: When event passes</span
+              >
+              <span class="source-inline">Source: Hennepin County (Tier 1)</span>
+            </li>
+            <li>
+              Public health bulletins monitored for updates
+              <span class="item-meta"
+                >Type: Status · Updated today · Expires: When condition ends</span
+              >
+              <span class="source-inline"
+                >Source: County public health (Tier 1)</span
+              >
+            </li>
+            <li>
+              Library and facility hours may change if conditions worsen
+              <span class="item-meta"
+                >Type: Advisory · Updated today · Expires: When condition ends</span
+              >
+              <span class="source-inline"
+                >Source: Hennepin County Library (Tier 1)</span
+              >
+            </li>
+          </ul>
+          <p class="back">
+            <a href="#index"
+              >Back to index <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </p>
+        </section>
+
+        <section id="ramsey" class="county" aria-labelledby="ramsey-h">
+          <h2 id="ramsey-h">Ramsey County</h2>
+          <ul class="county-list">
+            <li>
+              Service and facility notices posted for today
+              <span class="item-meta"
+                >Type: Status · Updated today · Expires: After 24 hours</span
+              >
+              <span class="source-inline">Source: Ramsey County (Tier 1)</span>
+            </li>
+            <li>
+              Court and administrative calendars monitored for changes
+              <span class="item-meta"
+                >Type: Schedule · Updated today · Expires: When event passes</span
+              >
+              <span class="source-inline">Source: Court calendar (Tier 1)</span>
+            </li>
+          </ul>
+          <p class="back">
+            <a href="#index"
+              >Back to index <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </p>
+        </section>
+
+        <section id="scott" class="county" aria-labelledby="scott-h">
+          <h2 id="scott-h">Scott County</h2>
+          <ul class="county-list">
+            <li>
+              Public notices reviewed for weather impacts tonight
+              <span class="item-meta"
+                >Type: Advisory · Updated today · Expires: When condition ends</span
+              >
+              <span class="source-inline">Source: Scott County (Tier 1)</span>
+            </li>
+            <li>
+              Infrastructure advisories monitored
+              <span class="item-meta"
+                >Type: Status · Updated today · Expires: When condition ends</span
+              >
+              <span class="source-inline">Source: County public works (Tier 1)</span>
+            </li>
+          </ul>
+          <p class="back">
+            <a href="#index"
+              >Back to index <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </p>
+        </section>
+
+        <section
+          id="washington"
+          class="county"
+          aria-labelledby="washington-h"
+        >
+          <h2 id="washington-h">Washington County</h2>
+          <ul class="county-list">
+            <li>
+              County service updates posted for today
+              <span class="item-meta"
+                >Type: Status · Updated today · Expires: After 24 hours</span
+              >
+              <span class="source-inline"
+                >Source: Washington County (Tier 1)</span
+              >
+            </li>
+            <li>
+              Emergency management guidance monitored for evening weather
+              <span class="item-meta"
+                >Type: Status · Updated today · Expires: When condition ends</span
+              >
+              <span class="source-inline"
+                >Source: County emergency management (Tier 1)</span
+              >
+            </li>
+          </ul>
+          <p class="back">
+            <a href="#index"
+              >Back to index <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </p>
+        </section>
+
+        <p class="back">
+          <a href="#top"
+            >Back to top <span class="arrow" aria-hidden="true">↑</span></a
+          >
+        </p>
+      </section>
+    </main>
+
+    <footer class="footer" aria-label="Context">
+      <div class="wrap">
+        <p>
+          Daylight: 9h 00m<span aria-hidden="true"> • </span>Moon: Waxing gibbous
+        </p>
+        <p class="footer-links">
+          <a href="/how-we-know/">How we know</a
+          ><span aria-hidden="true"> · </span><a href="/daily/">Daily archive</a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

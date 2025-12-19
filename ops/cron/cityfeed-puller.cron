@@ -1,0 +1,3 @@
+# Example cron entry (runs every 10 minutes).
+# Install as `/etc/cron.d/cityfeed-puller` (or paste into root/www-data crontab).
+*/10 * * * * www-data /usr/local/bin/cityfeed-puller --origin https://s3.fr-par.scw.cloud/pull.mspmetro.com >> /var/log/cityfeed-puller.log 2>&1

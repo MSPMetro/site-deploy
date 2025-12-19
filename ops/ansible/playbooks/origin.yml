@@ -1,0 +1,10 @@
+---
+- name: MSPMetro Origin Setup
+  hosts: origin
+  become: true
+  vars_files:
+    - ../env/.env.origin
+
+  roles:
+    - common
+    - minio

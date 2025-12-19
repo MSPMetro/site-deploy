@@ -1,0 +1,12 @@
+[Unit]
+Description=Cityfeed manifest puller (briefing)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User={{ mspmetro_brief_user }}
+Group={{ mspmetro_brief_group }}
+UMask=0022
+EnvironmentFile=-/etc/default/cityfeed-puller-brief
+ExecStart=/usr/local/bin/cityfeed-puller-brief-run

@@ -1,0 +1,10 @@
+---
+- name: MSPMetro Edge Setup
+  hosts: edge_us
+  become: true
+  vars_files:
+    - ../env/.env.edge
+
+  roles:
+    - common
+    - edge-sync

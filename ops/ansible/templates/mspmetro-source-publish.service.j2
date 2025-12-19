@@ -1,0 +1,13 @@
+[Unit]
+Description=MSPMetro publisher: build + publish to local MinIO
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User={{ mspmetro_source_user }}
+Group={{ mspmetro_source_group }}
+WorkingDirectory={{ mspmetro_repo_dir }}
+EnvironmentFile=-/etc/default/mspmetro-backend
+EnvironmentFile=-/etc/default/mspmetro-source-publish
+ExecStart={{ mspmetro_repo_dir }}/scripts/source_publish_hourly.sh

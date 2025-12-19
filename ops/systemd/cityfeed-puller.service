@@ -1,0 +1,13 @@
+[Unit]
+Description=Cityfeed manifest puller
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+UMask=0022
+Environment=ORIGIN=https://s3.fr-par.scw.cloud/pull.mspmetro.com
+EnvironmentFile=-/etc/default/cityfeed-puller
+ExecStart=/usr/local/bin/cityfeed-puller --origin ${ORIGIN}

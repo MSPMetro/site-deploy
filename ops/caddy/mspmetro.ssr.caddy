@@ -1,0 +1,27 @@
+mspmetro.com www.mspmetro.com {
+    encode zstd gzip
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+
+    # Optional: expose backend API for testing/debugging.
+    # The UI itself fetches the backend server-side, so this is not required.
+    @api path /api/*
+    handle @api {
+        reverse_proxy 127.0.0.1:5000
+    }
+
+    # Serve only the SSR front page (and UI health check) from the Rust UI.
+    # All section/depth pages remain static under /var/www/mspmetro-brief/current.
+    @ui path / /healthz
+    handle @ui {
+        reverse_proxy 127.0.0.1:8080
+    }
+
+    # Static site (sections, archive, assets).
+    root * /var/www/mspmetro-brief/current
+    file_server
+}

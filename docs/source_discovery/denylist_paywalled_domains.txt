@@ -1,0 +1,8 @@
+# Exclude sources that are generally paywalled/metered.
+# One domain (or domain substring) per line; matched case-insensitively.
+#
+# This list is used by the discovery tools to avoid "paywall drift".
+
+startribune.com
+finance-commerce.com
+

@@ -1,0 +1,13 @@
+[Unit]
+Description=MSPMetro source ingestion worker
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User={{ mspmetro_source_user }}
+Group={{ mspmetro_source_group }}
+WorkingDirectory={{ mspmetro_repo_dir }}
+EnvironmentFile=-/etc/default/mspmetro-backend
+ExecStart={{ mspmetro_repo_dir }}/backend/.venv/bin/python -m mspmetro_backend ingest
+

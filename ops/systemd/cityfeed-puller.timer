@@ -1,0 +1,11 @@
+[Unit]
+Description=Run cityfeed-puller periodically
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+RandomizedDelaySec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

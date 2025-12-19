@@ -1,0 +1,11 @@
+# One domain (or domain substring) per line; matched case-insensitively against:
+# - seed site URLs
+# - discovered feed URLs
+# - discovered article URLs
+#
+# Keep this conservative: it's a hard exclude.
+
+fox9.com
+fox.com
+foxnews.com
+

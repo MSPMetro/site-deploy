@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mspmetro-backend"
+version = "0.1.0"
+description = "MSPMetro backend service (ingestion, alerts, snapshots)"
+requires-python = ">=3.11"
+dependencies = [
+  "Flask>=3.0",
+  "gunicorn>=21.2",
+  "SQLAlchemy>=2.0",
+  "psycopg[binary]>=3.2",
+  "alembic>=1.13",
+  "python-dotenv>=1.0",
+  "strawberry-graphql>=0.266.0",
+]
+
+[project.scripts]
+mspmetro-backend = "mspmetro_backend.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

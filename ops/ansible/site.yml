@@ -1,0 +1,220 @@
+---
+- name: MSPMetro SSR stack
+  hosts: all
+  become: true
+
+  vars:
+    mspmetro_repo_dir: /opt/mspmetro-ssr/cityfeed_pull
+    mspmetro_deploy_user: caddy
+    mspmetro_deploy_group: caddy
+
+    mspmetro_db_name: mspmetro
+    mspmetro_db_user: mspmetro
+    # For testing: override via --extra-vars or inventory.
+    mspmetro_db_password: mspmetro
+    mspmetro_db_host: 127.0.0.1
+    mspmetro_db_port: 5432
+    mspmetro_database_url: >-
+      postgresql+psycopg://{{ mspmetro_db_user }}:{{ mspmetro_db_password }}@{{ mspmetro_db_host }}:{{ mspmetro_db_port }}/{{ mspmetro_db_name }}
+
+    mspmetro_backend_port: 5000
+    mspmetro_ui_port: 8090
+
+    mspmetro_backend_origin: "http://127.0.0.1:{{ mspmetro_backend_port }}"
+    mspmetro_ui_bind: "127.0.0.1:{{ mspmetro_ui_port }}"
+    mspmetro_ui_static_dir: /var/www/mspmetro/current/static
+
+    mspmetro_caddy_site: edge.eur.mspmetro.com
+
+  tasks:
+    - name: Install system packages
+      ansible.builtin.apt:
+        update_cache: true
+        name:
+          - python3-venv
+          - rsync
+        state: present
+
+    - name: Ensure deploy directory exists
+      ansible.builtin.file:
+        path: "{{ mspmetro_repo_dir }}"
+        state: directory
+        owner: "{{ mspmetro_deploy_user }}"
+        group: "{{ mspmetro_deploy_group }}"
+        mode: "0755"
+
+    - name: Sync repo to server
+      ansible.posix.synchronize:
+        src: "{{ playbook_dir }}/../..//"
+        dest: "{{ mspmetro_repo_dir }}/"
+        delete: true
+        rsync_opts:
+          - "--exclude=.git/"
+          - "--exclude=target/"
+          - "--exclude=backend/.venv/"
+          - "--exclude=**/__pycache__/"
+          - "--exclude=*.pyc"
+
+    - name: Ensure repo ownership
+      ansible.builtin.file:
+        path: "{{ mspmetro_repo_dir }}"
+        state: directory
+        owner: "{{ mspmetro_deploy_user }}"
+        group: "{{ mspmetro_deploy_group }}"
+        recurse: true
+
+    - name: Build UI binary locally
+      ansible.builtin.command: cargo build --release -p mspmetro-ui
+      args:
+        chdir: "{{ playbook_dir }}/../.."
+      delegate_to: localhost
+      become: false
+      changed_when: true
+
+    - name: Install UI binary
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../target/release/mspmetro-ui"
+        dest: /usr/local/bin/mspmetro-ui
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Ensure Postgres role exists
+      ansible.builtin.shell: |
+        set -euo pipefail
+        sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='{{ mspmetro_db_user }}'" | grep -q 1 \
+          || sudo -u postgres psql -c "CREATE ROLE {{ mspmetro_db_user }} WITH LOGIN PASSWORD '{{ mspmetro_db_password }}'"
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Ensure Postgres database exists
+      ansible.builtin.shell: |
+        set -euo pipefail
+        sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='{{ mspmetro_db_name }}'" | grep -q 1 \
+          || sudo -u postgres createdb -O {{ mspmetro_db_user }} {{ mspmetro_db_name }}
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Create backend venv
+      ansible.builtin.command: python3 -m venv backend/.venv
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        creates: "{{ mspmetro_repo_dir }}/backend/.venv/bin/python3"
+      become_user: "{{ mspmetro_deploy_user }}"
+
+    - name: Install backend dependencies
+      ansible.builtin.shell: |
+        set -euo pipefail
+        backend/.venv/bin/pip install -U pip
+        backend/.venv/bin/pip install -e backend
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        executable: /bin/bash
+      become_user: "{{ mspmetro_deploy_user }}"
+
+    - name: Run backend migrations
+      ansible.builtin.shell: |
+        set -euo pipefail
+        export DATABASE_URL="{{ mspmetro_database_url }}"
+        backend/.venv/bin/alembic -c backend/alembic.ini upgrade head
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        executable: /bin/bash
+      become_user: "{{ mspmetro_deploy_user }}"
+
+    - name: Seed backend (dev/test)
+      ansible.builtin.shell: |
+        set -euo pipefail
+        export DATABASE_URL="{{ mspmetro_database_url }}"
+        backend/.venv/bin/python -m mspmetro_backend seed
+      args:
+        chdir: "{{ mspmetro_repo_dir }}"
+        executable: /bin/bash
+      become_user: "{{ mspmetro_deploy_user }}"
+
+    - name: Write backend env file
+      ansible.builtin.template:
+        src: templates/mspmetro-backend.env.j2
+        dest: /etc/default/mspmetro-backend
+        owner: root
+        group: root
+        mode: "0640"
+
+    - name: Write UI env file
+      ansible.builtin.template:
+        src: templates/mspmetro-ui.env.j2
+        dest: /etc/default/mspmetro-ui
+        owner: root
+        group: root
+        mode: "0640"
+
+    - name: Install systemd unit (backend)
+      ansible.builtin.template:
+        src: templates/mspmetro-backend.service.j2
+        dest: /etc/systemd/system/mspmetro-backend.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install systemd unit (ui)
+      ansible.builtin.template:
+        src: templates/mspmetro-ui.service.j2
+        dest: /etc/systemd/system/mspmetro-ui.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable and start services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+      loop:
+        - mspmetro-backend.service
+        - mspmetro-ui.service
+
+    - name: Patch Caddyfile (edge host /ui and /api/v1)
+      ansible.builtin.copy:
+        src: files/patch_caddy.py
+        dest: /usr/local/bin/mspmetro-patch-caddy
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Apply Caddy patch
+      ansible.builtin.command: >
+        /usr/local/bin/mspmetro-patch-caddy
+        --site {{ mspmetro_caddy_site }}
+        --ui-port {{ mspmetro_ui_port }}
+        --backend-port {{ mspmetro_backend_port }}
+      changed_when: false
+
+    - name: Format + validate Caddy config
+      ansible.builtin.shell: |
+        set -euo pipefail
+        caddy fmt --overwrite /etc/caddy/Caddyfile
+        caddy validate --config /etc/caddy/Caddyfile
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Reload Caddy
+      ansible.builtin.systemd:
+        name: caddy
+        state: reloaded
+      changed_when: false
+
+    - name: Verify local health checks
+      ansible.builtin.shell: |
+        set -euo pipefail
+        curl -sS http://127.0.0.1:{{ mspmetro_backend_port }}/healthz >/dev/null
+        curl -sS http://127.0.0.1:{{ mspmetro_ui_port }}/healthz >/dev/null
+      args:
+        executable: /bin/bash
+      changed_when: false

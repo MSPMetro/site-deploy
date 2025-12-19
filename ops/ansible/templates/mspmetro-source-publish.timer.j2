@@ -1,0 +1,13 @@
+[Unit]
+Description=Run MSPMetro publish (build + MinIO) hourly
+
+[Timer]
+OnBootSec=3m
+OnUnitActiveSec=1h
+RandomizedDelaySec=10m
+Persistent=true
+Unit=mspmetro-source-publish.service
+
+[Install]
+WantedBy=timers.target
+

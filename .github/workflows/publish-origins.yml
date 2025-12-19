@@ -1,0 +1,70 @@
+name: Publish to origins (Scaleway + DigitalOcean)
+
+on:
+  push:
+    branches: ["master", "main"]
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "publish-origins"
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install publisher deps
+        run: |
+          python -m pip install -U pip
+          pip install -r scripts/publisher_requirements.txt
+
+      - name: Build static site
+        run: scripts/build_site.sh
+
+      - name: Publish (global) to Scaleway
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.SCW_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SCW_SECRET_KEY }}
+          S3_BUCKET: pull
+          S3_ENDPOINT_URL: https://s3.fr-par.scw.cloud
+          S3_REGION: us-east-1
+          S3_OBJECT_ACL: public-read
+          ORIGIN_BASE_URL: https://pull.s3.fr-par.scw.cloud
+        run: python scripts/publish_s3.py
+
+      - name: Publish (world) to DigitalOcean Spaces
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET_KEY }}
+          S3_BUCKET: mspmetro-world
+          S3_ENDPOINT_URL: https://sfo3.digitaloceanspaces.com
+          S3_REGION: sfo3
+          S3_OBJECT_ACL: public-read
+          ORIGIN_BASE_URL: https://mspmetro-world.sfo3.digitaloceanspaces.com
+        run: python scripts/publish_s3.py
+
+      - name: Publish (earth) to third origin
+        if: ${{ secrets.EARTH_AWS_ACCESS_KEY_ID != '' && secrets.EARTH_AWS_SECRET_ACCESS_KEY != '' && secrets.EARTH_S3_BUCKET != '' && secrets.EARTH_S3_ENDPOINT_URL != '' && secrets.EARTH_ORIGIN_BASE_URL != '' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.EARTH_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.EARTH_AWS_SECRET_ACCESS_KEY }}
+          S3_BUCKET: ${{ secrets.EARTH_S3_BUCKET }}
+          S3_ENDPOINT_URL: ${{ secrets.EARTH_S3_ENDPOINT_URL }}
+          S3_REGION: ${{ secrets.EARTH_S3_REGION || 'us-east-1' }}
+          S3_ADDRESSING_STYLE: ${{ secrets.EARTH_S3_ADDRESSING_STYLE || 'auto' }}
+          S3_OBJECT_ACL: public-read
+          ORIGIN_BASE_URL: ${{ secrets.EARTH_ORIGIN_BASE_URL }}
+        run: python scripts/publish_s3.py

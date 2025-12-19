@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodically publish MSPMetro briefing to IPNS
+
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=20m
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

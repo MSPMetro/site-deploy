@@ -1,0 +1,250 @@
+---
+# Configures a publisher host to mirror a MinIO bucket to multiple remote S3-compatible buckets.
+#
+# Run:
+#   ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i 'PUBLISHER_HOST,' -u root ops/ansible/minio_replication.yml
+#
+# This playbook expects:
+# - MinIO running locally on the target host (see ops/ansible/minio_publisher.yml)
+# - provider credentials present on the controller (from `.env`) for the remotes you want to mirror to
+
+- name: Configure MinIO replication fanout (publisher)
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    mspmetro_mc_url: https://dl.min.io/client/mc/release/linux-amd64/mc
+    mspmetro_mc_path: /usr/local/bin/mc
+    mspmetro_repl_user: mspmetro-repl
+    mspmetro_repl_home: /var/lib/mspmetro-repl
+
+    # MinIO credentials/config (matches the existing MSPMetro MinIO unit)
+    mspmetro_minio_env_file: /etc/mspmetro/env
+    mspmetro_minio_endpoint_url: http://127.0.0.1:9000
+    mspmetro_minio_bucket: mspmetro-site
+
+    # Defaults are derived from the controller environment when possible.
+    remote_global_endpoint: "{{ lookup('env', 'SCW_ENDPOINT') | default('https://s3.fr-par.scw.cloud', true) }}"
+    remote_global_bucket: "{{ lookup('env', 'S3_BUCKET_GLOBAL') | default('', true) }}"
+    remote_global_access_key: "{{ lookup('env', 'SCW_ACCESS_KEY') | default(lookup('env', 'AWS_ACCESS_KEY_ID'), true) }}"
+    remote_global_secret_key: "{{ lookup('env', 'SCW_SECRET_KEY') | default(lookup('env', 'AWS_SECRET_ACCESS_KEY'), true) }}"
+
+    remote_world_endpoint: "{{ lookup('env', 'DO_SPACES_ENDPOINT') | default(lookup('env', 'DO_S3_ENDPOINT_URL'), true) }}"
+    remote_world_bucket: "{{ lookup('env', 'DO_S3_BUCKET') | default(lookup('env', 'S3_BUCKET_WORLD'), true) }}"
+    remote_world_access_key: "{{ lookup('env', 'DO_SPACES_ACCESS_KEY') | default(lookup('env', 'DO_AWS_ACCESS_KEY_ID'), true) }}"
+    remote_world_secret_key: "{{ lookup('env', 'DO_SPACES_SECRET_KEY') | default(lookup('env', 'DO_AWS_SECRET_ACCESS_KEY'), true) }}"
+
+    remote_earth_endpoint: "{{ lookup('env', 'HETZNER_ENDPOINT') | default(lookup('env', 'EARTH_S3_ENDPOINT_URL'), true) }}"
+    remote_earth_bucket: "{{ lookup('env', 'S3_BUCKET_EUR') | default(lookup('env', 'EARTH_S3_BUCKET'), true) }}"
+    remote_earth_access_key: "{{ lookup('env', 'HETZNER_ACCESS_KEY') | default(lookup('env', 'EARTH_AWS_ACCESS_KEY_ID'), true) }}"
+    remote_earth_secret_key: "{{ lookup('env', 'HETZNER_SECRET_KEY') | default(lookup('env', 'EARTH_AWS_SECRET_ACCESS_KEY'), true) }}"
+
+  pre_tasks:
+    - name: Bootstrap Python on Debian/Ubuntu if missing (required for Ansible modules)
+      ansible.builtin.raw: |
+        set -e
+        if command -v python3 >/dev/null 2>&1; then
+          exit 0
+        fi
+        if command -v apt-get >/dev/null 2>&1; then
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -y
+          apt-get install -y python3 python3-apt
+          exit 0
+        fi
+        echo "python3 missing and apt-get not found; install python3 and re-run" >&2
+        exit 2
+      changed_when: false
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+  tasks:
+    - name: Ensure mc is installed
+      ansible.builtin.get_url:
+        url: "{{ mspmetro_mc_url }}"
+        dest: "{{ mspmetro_mc_path }}"
+        mode: "0755"
+
+    - name: Ensure boto3 is available for world publicize (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name:
+          - python3-boto3
+        state: present
+        update_cache: true
+      when:
+        - ansible_os_family == "Debian"
+        - remote_world_endpoint is search("digitaloceanspaces.com")
+
+    - name: Ensure replication user exists
+      ansible.builtin.user:
+        name: "{{ mspmetro_repl_user }}"
+        home: "{{ mspmetro_repl_home }}"
+        create_home: true
+        shell: /usr/sbin/nologin
+        system: true
+
+    - name: Read MinIO env file
+      ansible.builtin.slurp:
+        src: "{{ mspmetro_minio_env_file }}"
+      register: minio_env_slurp
+      no_log: true
+
+    - name: Extract MinIO credentials
+      ansible.builtin.set_fact:
+        minio_root_user: >-
+          {{
+            (
+              (minio_env_slurp.content | b64decode)
+              | regex_findall('(?m)^MINIO_ROOT_USER=(.*)$')
+              | first
+            )
+            | default('', true)
+          }}
+        minio_root_password: >-
+          {{
+            (
+              (minio_env_slurp.content | b64decode)
+              | regex_findall('(?m)^MINIO_ROOT_PASSWORD=(.*)$')
+              | first
+            )
+            | default('', true)
+          }}
+      no_log: true
+
+    - name: Assert MinIO credentials were found
+      ansible.builtin.assert:
+        that:
+          - minio_root_user | length > 0
+          - minio_root_password | length > 0
+        fail_msg: "Missing MINIO_ROOT_USER/MINIO_ROOT_PASSWORD in {{ mspmetro_minio_env_file }}."
+
+    - name: Assert required remote config exists (global + world)
+      ansible.builtin.assert:
+        that:
+          - remote_global_bucket | length > 0
+          - remote_global_access_key | length > 0
+          - remote_global_secret_key | length > 0
+          - remote_world_endpoint | length > 0
+          - remote_world_bucket | length > 0
+          - remote_world_access_key | length > 0
+          - remote_world_secret_key | length > 0
+        fail_msg: "Missing remote provider env vars on controller. Ensure `.env` contains Scaleway + DigitalOcean credentials and bucket names."
+
+    - name: Configure mc aliases (MinIO + remotes)
+      become_user: "{{ mspmetro_repl_user }}"
+      no_log: true
+      ansible.builtin.shell: |
+        set -euo pipefail
+        "{{ mspmetro_mc_path }}" alias set minio "{{ mspmetro_minio_endpoint_url }}" "{{ minio_root_user }}" "{{ minio_root_password }}" --api S3v4 --path auto
+        "{{ mspmetro_mc_path }}" alias set global "{{ remote_global_endpoint }}" "{{ remote_global_access_key }}" "{{ remote_global_secret_key }}" --api S3v4 --path auto
+        "{{ mspmetro_mc_path }}" alias set world "{{ remote_world_endpoint }}" "{{ remote_world_access_key }}" "{{ remote_world_secret_key }}" --api S3v4 --path on
+        {% if remote_earth_endpoint | length > 0 and remote_earth_bucket | length > 0 and remote_earth_access_key | length > 0 and remote_earth_secret_key | length > 0 -%}
+        "{{ mspmetro_mc_path }}" alias set earth "{{ remote_earth_endpoint }}" "{{ remote_earth_access_key }}" "{{ remote_earth_secret_key }}" --api S3v4 --path auto
+        {% endif -%}
+      args:
+        executable: /bin/bash
+
+    - name: Ensure MinIO buckets exist and versioning is enabled
+      become_user: "{{ mspmetro_repl_user }}"
+      ansible.builtin.shell: |
+        set -euo pipefail
+        "{{ mspmetro_mc_path }}" mb --ignore-existing "minio/{{ mspmetro_minio_bucket }}"
+        "{{ mspmetro_mc_path }}" mb --ignore-existing "minio/mspmetro-assets"
+        "{{ mspmetro_mc_path }}" mb --ignore-existing "minio/mspmetro-logs"
+        "{{ mspmetro_mc_path }}" version enable "minio/{{ mspmetro_minio_bucket }}"
+        "{{ mspmetro_mc_path }}" version enable "minio/mspmetro-assets"
+        "{{ mspmetro_mc_path }}" version enable "minio/mspmetro-logs"
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Write replication env files (one per remote)
+      ansible.builtin.template:
+        src: templates/mspmetro-minio-replicate.env.j2
+        dest: "/etc/default/mspmetro-minio-replicate-{{ item.name }}"
+        owner: root
+        group: root
+        mode: "0640"
+      loop:
+        - name: global
+          src_alias: minio
+          src_bucket: "{{ mspmetro_minio_bucket }}"
+          dst_alias: global
+          dst_bucket: "{{ remote_global_bucket }}"
+        - name: world
+          src_alias: minio
+          src_bucket: "{{ mspmetro_minio_bucket }}"
+          dst_alias: world
+          dst_bucket: "{{ remote_world_bucket }}"
+        - name: earth
+          src_alias: minio
+          src_bucket: "{{ mspmetro_minio_bucket }}"
+          dst_alias: earth
+          dst_bucket: "{{ remote_earth_bucket }}"
+      when: item.name != 'earth' or (remote_earth_endpoint | length > 0 and remote_earth_bucket | length > 0 and remote_earth_access_key | length > 0 and remote_earth_secret_key | length > 0)
+
+    - name: Install systemd template unit (replication)
+      ansible.builtin.template:
+        src: templates/mspmetro-minio-replicate@.service.j2
+        dest: /etc/systemd/system/mspmetro-minio-replicate@.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable and start replication services
+      ansible.builtin.systemd:
+        name: "mspmetro-minio-replicate@{{ item }}.service"
+        enabled: true
+        state: started
+      loop:
+        - global
+        - world
+        - earth
+      when: item != 'earth' or (remote_earth_endpoint | length > 0 and remote_earth_bucket | length > 0 and remote_earth_access_key | length > 0 and remote_earth_secret_key | length > 0)
+
+    # DigitalOcean Spaces frequently defaults to private objects; cityfeed-puller needs unauthenticated GETs.
+    # If we can't change bucket policy/ACL at the bucket level, we periodically enforce per-object public-read ACL.
+    - name: Install world publicize script (DigitalOcean only)
+      ansible.builtin.template:
+        src: templates/mspmetro-world-publicize.py.j2
+        dest: /usr/local/bin/mspmetro-world-publicize.py
+        owner: root
+        group: root
+        mode: "0755"
+      when: remote_world_endpoint is search("digitaloceanspaces.com")
+
+    - name: Install world publicize systemd unit
+      ansible.builtin.template:
+        src: templates/mspmetro-world-publicize.service.j2
+        dest: /etc/systemd/system/mspmetro-world-publicize.service
+        owner: root
+        group: root
+        mode: "0644"
+      when: remote_world_endpoint is search("digitaloceanspaces.com")
+
+    - name: Install world publicize systemd timer
+      ansible.builtin.template:
+        src: templates/mspmetro-world-publicize.timer.j2
+        dest: /etc/systemd/system/mspmetro-world-publicize.timer
+        owner: root
+        group: root
+        mode: "0644"
+      when: remote_world_endpoint is search("digitaloceanspaces.com")
+
+    - name: Reload systemd (world publicize)
+      ansible.builtin.systemd:
+        daemon_reload: true
+      when: remote_world_endpoint is search("digitaloceanspaces.com")
+
+    - name: Enable and start world publicize timer
+      ansible.builtin.systemd:
+        name: mspmetro-world-publicize.timer
+        enabled: true
+        state: started
+      when: remote_world_endpoint is search("digitaloceanspaces.com")

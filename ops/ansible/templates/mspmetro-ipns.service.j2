@@ -1,0 +1,15 @@
+[Unit]
+Description=Publish MSPMetro briefing to IPFS/IPNS
+Wants=network-online.target ipfs.service
+After=network-online.target ipfs.service
+
+[Service]
+Type=oneshot
+User=ipfs
+Group=ipfs
+Environment=IPFS_PATH=/var/lib/ipfs
+Environment=HOME=/var/lib/ipfs
+Environment=XDG_CONFIG_HOME=/var/lib/ipfs/.config
+EnvironmentFile=-/etc/default/mspmetro-ipns
+WorkingDirectory=/var/lib/ipfs
+ExecStart=/bin/bash -lc 'set -euo pipefail; SNAP="$(readlink -f "$${BRIEF_ROOT}/current")"; CID="$(/usr/local/bin/ipfs add -r -Q --cid-version=1 "$${SNAP}")"; /usr/local/bin/ipfs name publish --key "$${IPNS_KEY_NAME}" --lifetime "$${IPNS_LIFETIME}" "/ipfs/$${CID}" >/dev/null'

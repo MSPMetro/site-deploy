@@ -1,0 +1,18 @@
+[Unit]
+Description=MSPMetro MinIO fanout replication (%i)
+After=network-online.target mspmetro-minio.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ mspmetro_repl_user | default('mspmetro-repl') }}
+Group={{ mspmetro_repl_user | default('mspmetro-repl') }}
+Environment=HOME={{ mspmetro_repl_home | default('/var/lib/mspmetro-repl') }}
+EnvironmentFile=-/etc/default/mspmetro-minio-replicate-%i
+ExecStart={{ mspmetro_mc_path | default('/usr/local/bin/mc') }} mirror --overwrite --remove --watch ${SRC_ALIAS}/${SRC_BUCKET} ${DST_ALIAS}/${DST_BUCKET}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+

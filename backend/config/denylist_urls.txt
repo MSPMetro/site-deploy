@@ -1,0 +1,7 @@
+# URLs to exclude from MSPMetro ingestion/rendering.
+#
+# One URL per line. Lines starting with # are comments.
+# Matching is done on a normalized form (trimmed, fragment removed, trailing slash removed).
+
+https://blog.itys.net/posts/why-your-job-turned-on-you/
+

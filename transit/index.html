@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Transit briefing: service status, disruptions, and practical rider guidance."
+    />
+
+    <link rel="stylesheet" href="/static/css/daily.css" />
+    <link
+      rel="preload"
+      href="/static/fonts/AtkinsonHyperlegibleNext-Regular.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/static/fonts/AtkinsonHyperlegibleNext-Bold.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link rel="icon" type="image/png" href="/static/favicon.png" />
+    <link rel="apple-touch-icon" href="/static/favicon.png" />
+    <title>MSPMetro — Transit</title>
+  </head>
+  <body id="top">
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="orientation" aria-label="Orientation">
+      <div class="wrap">
+        <dl class="orientation-grid">
+          <div>
+            <dt>Day</dt>
+            <dd>Wednesday</dd>
+          </div>
+          <div>
+            <dt>Date</dt>
+            <dd>December 17, 2025</dd>
+          </div>
+          <div>
+            <dt>Region</dt>
+            <dd>Twin Cities</dd>
+          </div>
+          <div>
+            <dt>Weather</dt>
+            <dd>
+              32°F <span class="muted">(feels 26°F)</span>
+              <span aria-hidden="true">•</span> Snow after 7pm
+            </dd>
+          </div>
+          <div>
+            <dt>Sunset</dt>
+            <dd>4:36pm</dd>
+          </div>
+        </dl>
+      </div>
+      <a class="brand" href="/" aria-label="MSPMetro home">
+        <img
+          src="/static/Logo_SVG.svg"
+          alt=""
+          aria-hidden="true"
+          width="96"
+          height="96"
+        />
+      </a>
+    </header>
+
+    <nav class="top-nav" aria-label="Primary">
+      <div class="wrap">
+        <a href="/weather/">Weather</a> · <a href="/metro/">Metro</a> ·
+        <a href="/world/">World</a> · <a href="/neighbors/">Neighbors</a> ·
+        <a href="/transit/">Transit</a> · <a href="/events/">Events</a>
+      </div>
+    </nav>
+
+    <main id="main" class="wrap" tabindex="-1">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Daily briefing</a>
+      </nav>
+
+      <header class="section-header">
+        <h1>Transit</h1>
+        <p class="section-meta">Updated 15 minutes ago · Source: Metro Transit + MnDOT 511 + MSP Airport</p>
+      </header>
+
+      <p class="status-line">
+        <span class="status-line__label">TRANSIT STATUS:</span> Minor delays
+        reported on Blue and Green Lines
+      </p>
+
+      <section class="briefing" aria-label="Section brief">
+        <h2 class="kicker" id="section-brief-title">SECTION BRIEF</h2>
+        <ul class="brief-list" aria-labelledby="section-brief-title">
+          <li>Light rail delays expected during evening commute.</li>
+          <li>Highway speeds reduced on I-94 and Hwy 62.</li>
+          <li>Airport operations slowed by deicing procedures.</li>
+        </ul>
+      </section>
+
+      <section id="index" class="index-block" aria-label="Article index">
+        <h2 class="kicker" id="index-title">ARTICLES</h2>
+        <ul class="article-index" aria-labelledby="index-title">
+          <li>
+            <a href="#light-rail"
+              >Light Rail
+              <span class="arrow" aria-hidden="true">→</span></a
+            >
+            <p class="dek">One-sentence status + exceptions only.</p>
+            <p class="meta-line">Affects: Riders · Updated 15 minutes ago</p>
+          </li>
+          <li>
+            <a href="#bus"
+              >Bus
+              <span class="arrow" aria-hidden="true">→</span></a
+            >
+            <p class="dek">Only notable detours, not timetables.</p>
+            <p class="meta-line">Affects: Riders · Updated 25 minutes ago</p>
+          </li>
+          <li>
+            <a href="#highways"
+              >Highways
+              <span class="arrow" aria-hidden="true">→</span></a
+            >
+            <p class="dek">Incidents and construction impacts only.</p>
+            <p class="meta-line">Affects: Drivers · Updated 20 minutes ago</p>
+          </li>
+          <li>
+            <a href="#airport"
+              >Airport
+              <span class="arrow" aria-hidden="true">→</span></a
+            >
+            <p class="dek">Delay categories and deicing impacts.</p>
+            <p class="meta-line">Affects: Air travelers · Updated 18 minutes ago</p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="details" aria-label="Article details">
+        <article id="light-rail" class="article-detail">
+          <h2>Light Rail</h2>
+          <p>
+            Minor delays reported; expect slower trips during the evening commute.
+          </p>
+          <ul class="exceptions">
+            <li>Blue Line: minor delays reported.</li>
+            <li>Green Line: minor delays reported.</li>
+          </ul>
+          <p class="meta-line"><span class="meta-label">Type:</span> Status</p>
+          <p class="meta-line">
+            <span class="meta-label">Expires:</span> When condition ends
+          </p>
+          <p class="meta-line"><span class="meta-label">Affects:</span> Riders</p>
+          <p class="meta-line"><span class="meta-label">Updated:</span> 15 minutes ago</p>
+          <p class="source">
+            <span class="meta-label">Sources:</span>
+            <a href="https://www.metrotransit.org/" rel="external noopener noreferrer"
+              >Metro Transit (Tier 1) <span class="arrow" aria-hidden="true">↗</span
+              ><span class="sr-only"> (external site)</span></a
+            >
+          </p>
+          <p class="back">
+            <a href="#index"
+              >Back to index <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </p>
+        </article>
+
+        <article id="bus" class="article-detail">
+          <h2>Bus</h2>
+          <p>
+            Service running with weather-related slowdowns; check advisories for
+            detours and stop changes.
+          </p>
+          <ul class="exceptions">
+            <li>Detours may post late afternoon if conditions worsen.</li>
+          </ul>
+          <p class="meta-line"><span class="meta-label">Type:</span> Status</p>
+          <p class="meta-line">
+            <span class="meta-label">Expires:</span> When condition ends
+          </p>
+          <p class="meta-line"><span class="meta-label">Affects:</span> Riders</p>
+          <p class="meta-line"><span class="meta-label">Updated:</span> 25 minutes ago</p>
+          <p class="source">
+            <span class="meta-label">Sources:</span>
+            <a
+              href="https://www.metrotransit.org/advisories"
+              rel="external noopener noreferrer"
+              >Metro Transit Advisories (Tier 1) <span class="arrow" aria-hidden="true">↗</span
+              ><span class="sr-only"> (external site)</span></a
+            >
+          </p>
+          <p class="back">
+            <a href="#index"
+              >Back to index <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </p>
+        </article>
+
+        <article id="highways" class="article-detail">
+          <h2>Highways</h2>
+          <p>Speeds reduced on key corridors; expect slower travel after sunset.</p>
+          <ul class="exceptions">
+            <li>I-94: reduced speeds reported.</li>
+            <li>Hwy 62: reduced speeds reported.</li>
+          </ul>
+          <p class="meta-line"><span class="meta-label">Type:</span> Incident</p>
+          <p class="meta-line">
+            <span class="meta-label">Expires:</span> After resolution + 24 hours
+          </p>
+          <p class="meta-line"><span class="meta-label">Affects:</span> Drivers</p>
+          <p class="meta-line"><span class="meta-label">Updated:</span> 20 minutes ago</p>
+          <p class="source">
+            <span class="meta-label">Sources:</span>
+            <a
+              href="https://511mn.org/"
+              rel="external noopener noreferrer"
+              >MnDOT 511 (Tier 1) <span class="arrow" aria-hidden="true">↗</span
+              ><span class="sr-only"> (external site)</span></a
+            >
+          </p>
+          <p class="back">
+            <a href="#index"
+              >Back to index <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </p>
+        </article>
+
+        <article id="airport" class="article-detail">
+          <h2>Airport</h2>
+          <p>Operations slowed by deicing; delays may cascade into evening arrivals.</p>
+          <ul class="exceptions">
+            <li>Check flight status before leaving for pickups.</li>
+          </ul>
+          <p class="meta-line"><span class="meta-label">Type:</span> Status</p>
+          <p class="meta-line">
+            <span class="meta-label">Expires:</span> When condition ends
+          </p>
+          <p class="meta-line"><span class="meta-label">Affects:</span> Air travelers</p>
+          <p class="meta-line"><span class="meta-label">Updated:</span> 18 minutes ago</p>
+          <p class="source">
+            <span class="meta-label">Sources:</span>
+            <a
+              href="https://www.mspairport.com/"
+              rel="external noopener noreferrer"
+              >MSP Airport (Tier 1) <span class="arrow" aria-hidden="true">↗</span
+              ><span class="sr-only"> (external site)</span></a
+            >
+          </p>
+          <p class="back">
+            <a href="#index"
+              >Back to index <span class="arrow" aria-hidden="true">→</span></a
+            >
+          </p>
+        </article>
+
+        <p class="back">
+          <a href="#top"
+            >Back to top <span class="arrow" aria-hidden="true">↑</span></a
+          >
+        </p>
+      </section>
+    </main>
+
+    <footer class="footer" aria-label="Context">
+      <div class="wrap">
+        <p>
+          Daylight: 9h 00m<span aria-hidden="true"> • </span>Moon: Waxing gibbous
+        </p>
+        <p class="footer-links">
+          <a href="/how-we-know/">How we know</a
+          ><span aria-hidden="true"> · </span><a href="/daily/">Daily archive</a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

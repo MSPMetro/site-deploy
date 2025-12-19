@@ -1,0 +1,12 @@
+mspmetro.com www.mspmetro.com edge.eur {
+    root * /var/www/mspmetro-brief/current
+    file_server
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+
+    encode zstd gzip
+}

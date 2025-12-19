@@ -1,0 +1,136 @@
+---
+# Installs and runs MinIO on a single publisher host (NO DOCKER).
+# This playbook is intentionally separate from `deploy_brief.yml` so the existing pipeline remains usable.
+#
+# Run:
+#   ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i 'PUBLISHER_HOST,' -u root ops/ansible/minio_publisher.yml
+
+- name: Install MinIO (publisher)
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    mspmetro_minio_data_dir: /var/lib/minio
+    # Keep consistent with the native MinIO setup used on other hosts.
+    mspmetro_minio_env_file: /etc/mspmetro/env
+    mspmetro_minio_service: mspmetro-minio
+    mspmetro_minio_user: minio
+    mspmetro_minio_group: minio
+    mspmetro_minio_bin_path: /usr/local/bin/minio
+
+    # Expose only on localhost by default; terminate TLS with a reverse proxy if desired.
+    mspmetro_minio_bind_api: "127.0.0.1:9000"
+    mspmetro_minio_bind_console: "127.0.0.1:9001"
+
+  pre_tasks:
+    - name: Bootstrap Python on Debian/Ubuntu if missing (required for Ansible modules)
+      ansible.builtin.raw: |
+        set -e
+        if command -v python3 >/dev/null 2>&1; then
+          exit 0
+        fi
+        if command -v apt-get >/dev/null 2>&1; then
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -y
+          apt-get install -y python3 python3-apt
+          exit 0
+        fi
+        echo "python3 missing and apt-get not found; install python3 and re-run" >&2
+        exit 2
+      changed_when: false
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+  tasks:
+    - name: Install required packages (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Ensure /etc/mspmetro exists
+      ansible.builtin.file:
+        path: /etc/mspmetro
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Ensure minio group exists
+      ansible.builtin.group:
+        name: "{{ mspmetro_minio_group }}"
+        system: true
+
+    - name: Ensure minio user exists
+      ansible.builtin.user:
+        name: "{{ mspmetro_minio_user }}"
+        group: "{{ mspmetro_minio_group }}"
+        system: true
+        create_home: false
+
+    - name: Ensure MinIO data directory exists
+      ansible.builtin.file:
+        path: "{{ mspmetro_minio_data_dir }}"
+        state: directory
+        owner: "{{ mspmetro_minio_user }}"
+        group: "{{ mspmetro_minio_group }}"
+        mode: "0750"
+
+    - name: Check for existing MinIO env
+      ansible.builtin.stat:
+        path: "{{ mspmetro_minio_env_file }}"
+      register: minio_env_stat
+
+    - name: Generate MinIO root password (first install)
+      ansible.builtin.command: "python3 -c \"import secrets; print(secrets.token_urlsafe(48))\""
+      register: minio_root_password_cmd
+      changed_when: false
+      when: not minio_env_stat.stat.exists
+      no_log: true
+
+    - name: Write MinIO env file (first install)
+      ansible.builtin.copy:
+        dest: "{{ mspmetro_minio_env_file }}"
+        owner: root
+        group: root
+        mode: "0600"
+        content: |
+          # Managed by Ansible (ops/ansible/minio_publisher.yml) - NO DOCKER
+          MINIO_ROOT_USER={{ lookup('env', 'MINIO_ROOT_USER') | default('mspmetro', true) }}
+          MINIO_ROOT_PASSWORD={{ lookup('env', 'MINIO_ROOT_PASSWORD') | default(minio_root_password_cmd.stdout, true) }}
+          # Optional overrides:
+          # MINIO_SERVER_URL=https://minio.example.com
+          # MINIO_BROWSER_REDIRECT_URL=https://minio-console.example.com
+      when: not minio_env_stat.stat.exists
+      no_log: true
+
+    - name: Install MinIO binary
+      ansible.builtin.get_url:
+        url: https://dl.min.io/server/minio/release/linux-amd64/minio
+        dest: "{{ mspmetro_minio_bin_path }}"
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install systemd service (MinIO)
+      ansible.builtin.template:
+        src: templates/mspmetro-minio.service.j2
+        dest: "/etc/systemd/system/{{ mspmetro_minio_service }}.service"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable and start MinIO
+      ansible.builtin.systemd:
+        name: "{{ mspmetro_minio_service }}"
+        enabled: true
+        state: started
