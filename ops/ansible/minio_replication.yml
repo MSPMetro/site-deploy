@@ -30,15 +30,15 @@
     remote_global_access_key: "{{ lookup('env', 'SCW_ACCESS_KEY') | default(lookup('env', 'AWS_ACCESS_KEY_ID'), true) }}"
     remote_global_secret_key: "{{ lookup('env', 'SCW_SECRET_KEY') | default(lookup('env', 'AWS_SECRET_ACCESS_KEY'), true) }}"
 
-    remote_world_endpoint: "{{ lookup('env', 'DO_SPACES_ENDPOINT') | default(lookup('env', 'DO_S3_ENDPOINT_URL'), true) }}"
-    remote_world_bucket: "{{ lookup('env', 'DO_S3_BUCKET') | default(lookup('env', 'S3_BUCKET_WORLD'), true) }}"
-    remote_world_access_key: "{{ lookup('env', 'DO_SPACES_ACCESS_KEY') | default(lookup('env', 'DO_AWS_ACCESS_KEY_ID'), true) }}"
-    remote_world_secret_key: "{{ lookup('env', 'DO_SPACES_SECRET_KEY') | default(lookup('env', 'DO_AWS_SECRET_ACCESS_KEY'), true) }}"
+    remote_do_endpoint: "{{ lookup('env', 'DO_SPACES_ENDPOINT') | default(lookup('env', 'DO_S3_ENDPOINT_URL'), true) }}"
+    remote_do_bucket: "{{ lookup('env', 'DO_S3_BUCKET') | default('', true) }}"
+    remote_do_access_key: "{{ lookup('env', 'DO_SPACES_ACCESS_KEY') | default(lookup('env', 'DO_AWS_ACCESS_KEY_ID'), true) }}"
+    remote_do_secret_key: "{{ lookup('env', 'DO_SPACES_SECRET_KEY') | default(lookup('env', 'DO_AWS_SECRET_ACCESS_KEY'), true) }}"
 
-    remote_earth_endpoint: "{{ lookup('env', 'HETZNER_ENDPOINT') | default(lookup('env', 'EARTH_S3_ENDPOINT_URL'), true) }}"
-    remote_earth_bucket: "{{ lookup('env', 'S3_BUCKET_EUR') | default(lookup('env', 'EARTH_S3_BUCKET'), true) }}"
-    remote_earth_access_key: "{{ lookup('env', 'HETZNER_ACCESS_KEY') | default(lookup('env', 'EARTH_AWS_ACCESS_KEY_ID'), true) }}"
-    remote_earth_secret_key: "{{ lookup('env', 'HETZNER_SECRET_KEY') | default(lookup('env', 'EARTH_AWS_SECRET_ACCESS_KEY'), true) }}"
+    remote_het_endpoint: "{{ lookup('env', 'HETZNER_S3_ENDPOINT_URL') | default('', true) }}"
+    remote_het_bucket: "{{ lookup('env', 'HETZNER_S3_BUCKET') | default('', true) }}"
+    remote_het_access_key: "{{ lookup('env', 'HETZNER_ACCESS_KEY') | default('', true) }}"
+    remote_het_secret_key: "{{ lookup('env', 'HETZNER_SECRET_KEY') | default('', true) }}"
 
   pre_tasks:
     - name: Bootstrap Python on Debian/Ubuntu if missing (required for Ansible modules)
@@ -67,7 +67,7 @@
         dest: "{{ mspmetro_mc_path }}"
         mode: "0755"
 
-    - name: Ensure boto3 is available for world publicize (Debian/Ubuntu)
+    - name: Ensure boto3 is available for origin-do publicize (Debian/Ubuntu)
       ansible.builtin.apt:
         name:
           - python3-boto3
@@ -75,7 +75,7 @@
         update_cache: true
       when:
         - ansible_os_family == "Debian"
-        - remote_world_endpoint is search("digitaloceanspaces.com")
+        - remote_do_endpoint is search("digitaloceanspaces.com")
 
     - name: Ensure replication user exists
       ansible.builtin.user:
@@ -120,16 +120,16 @@
           - minio_root_password | length > 0
         fail_msg: "Missing MINIO_ROOT_USER/MINIO_ROOT_PASSWORD in {{ mspmetro_minio_env_file }}."
 
-    - name: Assert required remote config exists (global + world)
+    - name: Assert required remote config exists (global + origin-do)
       ansible.builtin.assert:
         that:
           - remote_global_bucket | length > 0
           - remote_global_access_key | length > 0
           - remote_global_secret_key | length > 0
-          - remote_world_endpoint | length > 0
-          - remote_world_bucket | length > 0
-          - remote_world_access_key | length > 0
-          - remote_world_secret_key | length > 0
+          - remote_do_endpoint | length > 0
+          - remote_do_bucket | length > 0
+          - remote_do_access_key | length > 0
+          - remote_do_secret_key | length > 0
         fail_msg: "Missing remote provider env vars on controller. Ensure `.env` contains Scaleway + DigitalOcean credentials and bucket names."
 
     - name: Configure mc aliases (MinIO + remotes)
@@ -139,9 +139,9 @@
         set -euo pipefail
         "{{ mspmetro_mc_path }}" alias set minio "{{ mspmetro_minio_endpoint_url }}" "{{ minio_root_user }}" "{{ minio_root_password }}" --api S3v4 --path auto
         "{{ mspmetro_mc_path }}" alias set global "{{ remote_global_endpoint }}" "{{ remote_global_access_key }}" "{{ remote_global_secret_key }}" --api S3v4 --path auto
-        "{{ mspmetro_mc_path }}" alias set world "{{ remote_world_endpoint }}" "{{ remote_world_access_key }}" "{{ remote_world_secret_key }}" --api S3v4 --path on
-        {% if remote_earth_endpoint | length > 0 and remote_earth_bucket | length > 0 and remote_earth_access_key | length > 0 and remote_earth_secret_key | length > 0 -%}
-        "{{ mspmetro_mc_path }}" alias set earth "{{ remote_earth_endpoint }}" "{{ remote_earth_access_key }}" "{{ remote_earth_secret_key }}" --api S3v4 --path auto
+        "{{ mspmetro_mc_path }}" alias set origin-do "{{ remote_do_endpoint }}" "{{ remote_do_access_key }}" "{{ remote_do_secret_key }}" --api S3v4 --path on
+        {% if remote_het_endpoint | length > 0 and remote_het_bucket | length > 0 and remote_het_access_key | length > 0 and remote_het_secret_key | length > 0 -%}
+        "{{ mspmetro_mc_path }}" alias set origin-het "{{ remote_het_endpoint }}" "{{ remote_het_access_key }}" "{{ remote_het_secret_key }}" --api S3v4 --path auto
         {% endif -%}
       args:
         executable: /bin/bash
@@ -173,17 +173,17 @@
           src_bucket: "{{ mspmetro_minio_bucket }}"
           dst_alias: global
           dst_bucket: "{{ remote_global_bucket }}"
-        - name: world
+        - name: origin-do
           src_alias: minio
           src_bucket: "{{ mspmetro_minio_bucket }}"
-          dst_alias: world
-          dst_bucket: "{{ remote_world_bucket }}"
-        - name: earth
+          dst_alias: origin-do
+          dst_bucket: "{{ remote_do_bucket }}"
+        - name: origin-het
           src_alias: minio
           src_bucket: "{{ mspmetro_minio_bucket }}"
-          dst_alias: earth
-          dst_bucket: "{{ remote_earth_bucket }}"
-      when: item.name != 'earth' or (remote_earth_endpoint | length > 0 and remote_earth_bucket | length > 0 and remote_earth_access_key | length > 0 and remote_earth_secret_key | length > 0)
+          dst_alias: origin-het
+          dst_bucket: "{{ remote_het_bucket }}"
+      when: item.name != 'origin-het' or (remote_het_endpoint | length > 0 and remote_het_bucket | length > 0 and remote_het_access_key | length > 0 and remote_het_secret_key | length > 0)
 
     - name: Install systemd template unit (replication)
       ansible.builtin.template:
@@ -201,50 +201,50 @@
       ansible.builtin.systemd:
         name: "mspmetro-minio-replicate@{{ item }}.service"
         enabled: true
-        state: started
+        state: restarted
       loop:
         - global
-        - world
-        - earth
-      when: item != 'earth' or (remote_earth_endpoint | length > 0 and remote_earth_bucket | length > 0 and remote_earth_access_key | length > 0 and remote_earth_secret_key | length > 0)
+        - origin-do
+        - origin-het
+      when: item != 'origin-het' or (remote_het_endpoint | length > 0 and remote_het_bucket | length > 0 and remote_het_access_key | length > 0 and remote_het_secret_key | length > 0)
 
     # DigitalOcean Spaces frequently defaults to private objects; cityfeed-puller needs unauthenticated GETs.
     # If we can't change bucket policy/ACL at the bucket level, we periodically enforce per-object public-read ACL.
-    - name: Install world publicize script (DigitalOcean only)
+    - name: Install origin-do publicize script (DigitalOcean only)
       ansible.builtin.template:
-        src: templates/mspmetro-world-publicize.py.j2
-        dest: /usr/local/bin/mspmetro-world-publicize.py
+        src: templates/mspmetro-origin-do-publicize.py.j2
+        dest: /usr/local/bin/mspmetro-origin-do-publicize.py
         owner: root
         group: root
         mode: "0755"
-      when: remote_world_endpoint is search("digitaloceanspaces.com")
+      when: remote_do_endpoint is search("digitaloceanspaces.com")
 
-    - name: Install world publicize systemd unit
+    - name: Install origin-do publicize systemd unit
       ansible.builtin.template:
-        src: templates/mspmetro-world-publicize.service.j2
-        dest: /etc/systemd/system/mspmetro-world-publicize.service
+        src: templates/mspmetro-origin-do-publicize.service.j2
+        dest: /etc/systemd/system/mspmetro-origin-do-publicize.service
         owner: root
         group: root
         mode: "0644"
-      when: remote_world_endpoint is search("digitaloceanspaces.com")
+      when: remote_do_endpoint is search("digitaloceanspaces.com")
 
-    - name: Install world publicize systemd timer
+    - name: Install origin-do publicize systemd timer
       ansible.builtin.template:
-        src: templates/mspmetro-world-publicize.timer.j2
-        dest: /etc/systemd/system/mspmetro-world-publicize.timer
+        src: templates/mspmetro-origin-do-publicize.timer.j2
+        dest: /etc/systemd/system/mspmetro-origin-do-publicize.timer
         owner: root
         group: root
         mode: "0644"
-      when: remote_world_endpoint is search("digitaloceanspaces.com")
+      when: remote_do_endpoint is search("digitaloceanspaces.com")
 
-    - name: Reload systemd (world publicize)
+    - name: Reload systemd (origin-do publicize)
       ansible.builtin.systemd:
         daemon_reload: true
-      when: remote_world_endpoint is search("digitaloceanspaces.com")
+      when: remote_do_endpoint is search("digitaloceanspaces.com")
 
-    - name: Enable and start world publicize timer
+    - name: Enable and start origin-do publicize timer
       ansible.builtin.systemd:
-        name: mspmetro-world-publicize.timer
+        name: mspmetro-origin-do-publicize.timer
         enabled: true
         state: started
-      when: remote_world_endpoint is search("digitaloceanspaces.com")
+      when: remote_do_endpoint is search("digitaloceanspaces.com")

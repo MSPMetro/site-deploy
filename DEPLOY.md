@@ -18,7 +18,7 @@ The web server should serve **only** `/var/www/mspmetro-brief/current`.
 From the repo root:
 
 ```bash
-# Publishes to Scaleway (edge.global origin) + DigitalOcean (edge.world origin),
+# Publishes to Scaleway (origin-scw) + DigitalOcean (origin-do),
 # then installs/updates the puller + systemd timer on edge hosts.
 make deploy-brief
 ```
@@ -58,40 +58,40 @@ Edges are configured with **two origins** (primary + secondary) so they can fail
 - `ORIGIN_PRIMARY` and `ORIGIN_SECONDARY` are written to `/etc/default/cityfeed-puller-brief`
 - systemd runs `cityfeed-puller` with both `--origin` flags
 
-By convention:
+By convention (preferred origin labels):
 
-- `edge.eur` prefers Scaleway first, then DigitalOcean
-- `edge.us` prefers DigitalOcean first, then Scaleway
+- `edge.eur` prefers Scaleway (`origin-scw`) first, then DigitalOcean (`origin-do`)
+- `edge.us` prefers DigitalOcean (`origin-do`) first, then Scaleway (`origin-scw`)
 
-## DigitalOcean CDN custom domain (origin-us)
+## DigitalOcean CDN custom domain (origin-do)
 
-If you want a vanity hostname (example: `origin-us.mspmetro.com`) in front of the DigitalOcean Spaces-backed origin, you must attach a TLS certificate to the DO CDN endpoint.
+If you want a vanity hostname (example: `origin-do.mspmetro.com`) in front of the DigitalOcean Spaces-backed origin, you must attach a TLS certificate to the DO CDN endpoint.
 
 This repo provides a CLI flow that:
 
 1) issues a DNS-01 cert via Scaleway DNS, then
 2) uploads+attaches it to the DO CDN endpoint (no GUI), then
-3) you can `CNAME origin-us.mspmetro.com` to `mspmetro-world.sfo3.cdn.digitaloceanspaces.com`.
+3) you can `CNAME origin-do.mspmetro.com` to `origin-do.sfo3.cdn.digitaloceanspaces.com`.
 
 Run:
 
 ```bash
-make do-world-bind-domain DO_WORLD_CUSTOM_DOMAIN=origin-us.mspmetro.com
+make do-origin-do-bind-domain DO_ORIGIN_CUSTOM_DOMAIN=origin-do.mspmetro.com DO_ORIGIN_HOST=origin-do.sfo3.digitaloceanspaces.com
 ```
 
 ### Publishing to all CDNs
 
-If you have multiple CDN hostnames (e.g. `global.mspmetro.com`, `world.mspmetro.com`, `earth.mspmetro.com`) fronting different S3-compatible origins, publish to all of them with:
+If you have multiple S3-compatible origins (recommended: Scaleway + DigitalOcean + Hetzner), publish to all of them with:
 
 ```bash
 make publish-origins
 ```
 
-The third origin ("earth") is optional and configured via `EARTH_*` (see `.env.example`).
+The third origin (`origin-het`) is optional and configured via `HETZNER_*` / `PUBLISH_ORIGIN_HET` (see `.env.example`). In MSPMetro’s setup, it’s an **edge-only fallback origin URL** (provider bucket hostname), not a public hostname.
 
-### Earth origin: DNS + TLS caveat (important)
+### Origin-het: DNS + TLS caveat (important)
 
-`PUBLISH_ORIGIN_EARTH` / `EARTH_ORIGIN_BASE_URL` must be a **real HTTPS base URL** that serves:
+`PUBLISH_ORIGIN_HET` / `HET_ORIGIN_BASE_URL` must be a **real HTTPS base URL** that serves:
 
 - `manifests/latest.json`
 - `objects/<sha256>`
@@ -101,14 +101,16 @@ For most S3-compatible stores, that base URL is the bucket endpoint (examples):
 - DigitalOcean Spaces: `https://BUCKET.REGION.digitaloceanspaces.com`
 - Hetzner Object Storage: `https://BUCKET.nbg1.your-objectstorage.com`
 
-A plain DNS `CNAME` from `earth.mspmetro.com` to a bucket endpoint often does **not** work for HTTPS:
+MSPMetro recommendation: do **not** use a vanity hostname for origin-het. Point edge nodes directly at the provider bucket URL.
 
-- TLS certs usually cover `*.your-objectstorage.com`, not `earth.mspmetro.com`
-- Many object stores route buckets by **Host header**, so `earth.mspmetro.com` won’t map to the bucket
+A plain DNS `CNAME` from `origin-het.mspmetro.com` to a bucket endpoint often does **not** work for HTTPS:
 
-If you want a vanity domain like `earth.mspmetro.com`, put a real proxy/CDN in front that:
+- TLS certs usually cover `*.your-objectstorage.com`, not `origin-het.mspmetro.com`
+- Many object stores route buckets by **Host header**, so `origin-het.mspmetro.com` won’t map to the bucket
 
-- terminates TLS for `earth.mspmetro.com`
+If you want a vanity domain like `origin-het.mspmetro.com`, put a real proxy/CDN in front that:
+
+- terminates TLS for `origin-het.mspmetro.com`
 - forwards to the bucket endpoint with the correct Host header (or uses path-style routing)
 
 ## Install + First Pull (Ubuntu/Debian)
@@ -136,7 +138,7 @@ sudo chmod 0755 /var/www/mspmetro-brief
 
 sudo -u caddy /usr/local/bin/cityfeed-puller \
   --origin https://pull.s3.fr-par.scw.cloud \
-  --origin https://mspmetro-world.sfo3.digitaloceanspaces.com \
+  --origin https://origin-do.sfo3.digitaloceanspaces.com \
   --root /var/www/mspmetro-brief
 ```
 

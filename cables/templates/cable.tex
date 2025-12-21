@@ -1,0 +1,92 @@
+% NOTE: This is rendered by cables/tools/build_cable.py. Keep it content-first.
+\documentclass[11pt,letterpaper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{iftex}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{parskip}
+
+% Fonts: TeX Gyre family (bundled with TeX Live).
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{tgtermes}
+  \usepackage{tgheros}
+  \usepackage{tgcursor}
+\else
+  \usepackage{fontspec}
+  \setmainfont{TeX Gyre Termes}
+  \setsansfont{TeX Gyre Heros}
+  \setmonofont{TeX Gyre Cursor}
+\fi
+
+\hypersetup{colorlinks=false,pdfborder={0 0 0}}
+
+\begin{document}
+\raggedbottom
+
+% Reproducible PDF metadata (derived from source, not wall clock).
+\ifdefined\pdfinfoomitdate\pdfinfoomitdate=1\fi
+\ifdefined\pdfsuppressptexinfo\pdfsuppressptexinfo=15\fi
+\ifdefined\pdftrailerid\pdftrailerid{<{{{PDF_TRAILER_ID1}}}><{{{PDF_TRAILER_ID2}}}>}\fi
+\ifdefined\pdfinfo
+\pdfinfo{
+  /CreationDate ({{{PDF_CREATION_DATE}}})
+  /ModDate ({{{PDF_CREATION_DATE}}})
+}
+\fi
+
+\begin{center}
+{\Large \textbf{ {{{CABLE_ID}}} }}\\
+\end{center}
+
+\vspace{2pt}
+
+\begin{center}
+{\scriptsize\ttfamily START CABLE}
+\end{center}
+
+\vspace{6pt}
+
+{{{BODY_TEX}}}
+
+\vspace{6pt}
+
+\begin{center}
+\texttt{END CABLE}
+\end{center}
+
+\vspace{4pt}
+
+\begin{samepage}
+\begin{center}
+{\scriptsize\ttfamily START VERIFICATION}
+\end{center}
+
+\vspace{1pt}
+
+\noindent{\small\textbf{Verification}}\par
+\begingroup
+\scriptsize\ttfamily
+\noindent UTC: {{{UTC}}}\par
+\noindent SHA256: {{{SHA256_TEX}}}\par
+\noindent SIG: {{{SIG}}}\par
+\noindent Canonical: \url{ {{{CANONICAL_URL}}} }\par
+\endgroup
+
+\vspace{4pt}
+
+\begin{center}
+\includegraphics[width=1.15in]{ {{{AZTEC_PATH}}} }\par
+{\scriptsize\texttt{ {{{CABLE_ID}}} }}
+\end{center}
+
+\vspace{2pt}
+
+\begin{center}
+{\scriptsize\ttfamily END VERIFICATION}
+\end{center}
+\end{samepage}
+
+\end{document}

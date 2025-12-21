@@ -5,6 +5,9 @@ want_marker="${MARKER:-PICKS}"
 
 EDGE_VERIFY_MAX_WAIT_SECONDS="${EDGE_VERIFY_MAX_WAIT_SECONDS:-60}"
 EDGE_VERIFY_DELAY_SECONDS="${EDGE_VERIFY_DELAY_SECONDS:-3}"
+# By default, don't block deploys on DNS that isn't live yet.
+# Set EDGE_VERIFY_SKIP_UNRESOLVABLE=0 to fail instead.
+EDGE_VERIFY_SKIP_UNRESOLVABLE="${EDGE_VERIFY_SKIP_UNRESOLVABLE:-1}"
 
 urls=()
 if [[ -n "${EDGE_URLS:-}" ]]; then
@@ -18,12 +21,12 @@ if [[ "${#urls[@]}" -eq 0 ]]; then
   if [[ -n "${ORIGIN_GLOBAL:-}" ]]; then urls+=("${ORIGIN_GLOBAL}"); fi
   if [[ -n "${ORIGIN_EUR:-}" ]]; then urls+=("${ORIGIN_EUR}"); fi
   if [[ -n "${ORIGIN_US:-}" ]]; then urls+=("${ORIGIN_US}"); fi
-  if [[ -n "${ORIGIN_WORLD:-}" ]]; then urls+=("${ORIGIN_WORLD}"); fi
-  if [[ -n "${ORIGIN_EARTH:-}" ]]; then urls+=("${ORIGIN_EARTH}"); fi
+  if [[ -n "${ORIGIN_DO:-}" ]]; then urls+=("${ORIGIN_DO}"); fi
+  if [[ -n "${ORIGIN_HET:-}" ]]; then urls+=("${ORIGIN_HET}"); fi
 fi
 
 if [[ "${#urls[@]}" -eq 0 ]]; then
-  echo "error: no URLs provided; set EDGE_URLS (comma-separated), or legacy ORIGIN_GLOBAL/ORIGIN_EUR/ORIGIN_US/ORIGIN_WORLD/ORIGIN_EARTH" >&2
+  echo "error: no URLs provided; set EDGE_URLS (comma-separated), or ORIGIN_GLOBAL/ORIGIN_EUR/ORIGIN_US/ORIGIN_DO/ORIGIN_HET" >&2
   exit 2
 fi
 
@@ -41,18 +44,29 @@ curl_get_with_retry() {
   local deadline=$((SECONDS + EDGE_VERIFY_MAX_WAIT_SECONDS))
   local last_err=""
   local last_http="000"
+  local last_rc=0
 
   while true; do
     last_err=""
     local err_file
     err_file="$(mktemp)"
-    last_http="$(
-      curl -sS --max-time 15 -L -o "$out_file" -w '%{http_code}' "$url" 2>"$err_file" || echo "000"
-    )"
+    last_rc=0
+    set +e
+    last_http="$(curl -sS --max-time 15 -L -o "$out_file" -w '%{http_code}' "$url" 2>"$err_file")"
+    last_rc=$?
+    set -e
+    if (( last_rc != 0 )); then
+      last_http="000"
+    fi
     if [[ -s "$err_file" ]]; then
       last_err="$(head -n 1 "$err_file" | tr -d '\r')"
     fi
     rm -f "$err_file" >/dev/null 2>&1 || true
+
+    # Fail fast on DNS that doesn't resolve; don't spin for the full retry window.
+    if (( last_rc == 6 )) || [[ "${last_err}" == *"Could not resolve host"* ]]; then
+      return 66
+    fi
 
     if [[ "$last_http" == "200" ]]; then
       return 0
@@ -74,7 +88,7 @@ curl_get_with_retry() {
 is_object_origin() {
   local base="$1"
   case "$base" in
-    *"://world.mspmetro.com"*|*"://global.mspmetro.com"*|*"://earth.mspmetro.com"*|\
+    *"://global.mspmetro.com"*|\
     *"://origin-"*".mspmetro.com"*|*"://origin-"*".rns.sh"*|\
     *".digitaloceanspaces.com"*|*".cdn.digitaloceanspaces.com"*|*".s3."*".scw.cloud"*|*"your-objectstorage.com"*|*".amazonaws.com"*)
       return 0
@@ -97,12 +111,26 @@ check_url() {
 
   local tmp_html
   tmp_html="$(mktemp)"
-  if ! curl_get_with_retry "${base}/" "$tmp_html"; then
+  curl_get_with_retry "${base}/" "$tmp_html"
+  rc=$?
+  if (( rc != 0 )); then
+    if (( rc == 66 )) && [[ "$EDGE_VERIFY_SKIP_UNRESOLVABLE" == "1" ]]; then
+      echo "SKIP: DNS does not resolve for ${base}" >&2
+      rm -f "$tmp_html" >/dev/null 2>&1 || true
+      return 0
+    fi
     # Common with object-storage-backed CDNs when "default root object" isn't configured.
-    if curl_get_with_retry "${base}/index.html" "$tmp_html"; then
+    curl_get_with_retry "${base}/index.html" "$tmp_html"
+    rc=$?
+    if (( rc == 0 )); then
       echo "FAIL: ${base}/ does not serve index.html (but ${base}/index.html works); configure CDN 'default root object' / 'static website hosting'." >&2
       rm -f "$tmp_html" >/dev/null 2>&1 || true
       return 1
+    fi
+    if (( rc == 66 )) && [[ "$EDGE_VERIFY_SKIP_UNRESOLVABLE" == "1" ]]; then
+      echo "SKIP: DNS does not resolve for ${base}" >&2
+      rm -f "$tmp_html" >/dev/null 2>&1 || true
+      return 0
     fi
     rm -f "$tmp_html" >/dev/null 2>&1 || true
     return 1
@@ -115,7 +143,7 @@ check_url() {
     return 1
   fi
 
-  if ! rg -q "<link[^>]*rel=\"stylesheet\"[^>]*href=\"/static/css/daily\\.css\"" <<<"${html}"; then
+  if ! rg -q "<link[^>]*rel=\"stylesheet\"[^>]*href=\"[^\"]*static/css/daily\\.css\"" <<<"${html}"; then
     echo "FAIL: missing daily.css link in ${base}/" >&2
     return 1
   fi

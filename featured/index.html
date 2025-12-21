@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Featured: one story at a time, high-priority context and updates." />
+
+    <link rel="stylesheet" href="../static/css/daily.css" />
+    <link
+      rel="preload"
+      href="../static/fonts/AtkinsonHyperlegibleNext-Regular.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="../static/fonts/AtkinsonHyperlegibleNext-Bold.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link rel="icon" type="image/png" href="../static/favicon.png" />
+    <link rel="apple-touch-icon" href="../static/favicon.png" />
+    <title>MSPMetro — Featured</title>
+  </head>
+  <body id="top">
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="orientation" aria-label="Orientation">
+      <div class="wrap">
+        <dl class="orientation-grid">
+          <div class="orientation-logo">
+            <dt class="sr-only">MSPMetro</dt>
+            <dd>
+              <a class="brand" href="https://www.mspmetro.com/" aria-label="MSPMetro home">
+                <img src="/static/Logo_SVG.svg" alt="" aria-hidden="true" width="72" height="72" />
+              </a>
+            </dd>
+          </div>
+          <div>
+            <dt>Day</dt>
+            <dd>[[ dateInZone "Monday" now "America/Chicago" ]]</dd>
+          </div>
+          <div>
+            <dt>Date</dt>
+            <dd>[[ dateInZone "January 2, 2006" now "America/Chicago" ]]</dd>
+          </div>
+          <div>
+            <dt>Region</dt>
+            <dd>Twin Cities</dd>
+          </div>
+          <div>
+            <dt>Weather</dt>
+            <dd>
+              32°F <span class="muted">(feels 26°F)</span>
+              <span aria-hidden="true">•</span> Snow after 7pm
+            </dd>
+          </div>
+          <div class="orientation-sun">
+            <dt>Sunrise/Sunset</dt>
+            <dd>7:47am / 4:36pm</dd>
+          </div>
+          <div class="orientation-utc">
+            <dt>UTC</dt>
+            <dd>
+              <span class="orientation-utc__value">[[ now.UTC.Format "15:04Z" ]]</span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </header>
+
+    <nav class="top-nav" aria-label="Primary">
+      <div class="wrap">
+        <a href="/weather/">Weather</a> · <a href="/metro/">Metro</a> ·
+        <a href="/world/">World</a> · <a href="/neighbors/">Neighbors</a> ·
+        <a href="/transit/">Transit</a> · <a href="/events/">Events</a>
+      </div>
+    </nav>
+
+    <main id="main" class="wrap" tabindex="-1">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Daily briefing</a>
+      </nav>
+
+      <header class="section-header">
+        <h1>Featured</h1>
+        <p class="section-meta">One story at a time</p>
+      </header>
+
+      <section class="feature" aria-label="Featured story">
+        <h2 class="kicker">FEATURE</h2>
+        <h3 class="feature__hed">No feature posted yet</h3>
+        <p class="feature__dek">
+          When a feature is published, it appears here and at the top of the front page.
+        </p>
+      </section>
+    </main>
+
+    <footer class="footer" aria-label="Context">
+      <div class="wrap">
+        <p>MSPMetro Featured</p>
+        <p class="footer-links">
+          <a href="/how-we-know/">How we know</a
+          ><span aria-hidden="true"> · </span><a href="/daily/">Daily archive</a><span aria-hidden="true"> · </span><a href="/credits/">Credits</a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

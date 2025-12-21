@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>MSPMetro Cables</title>
+    <link>https://www.mspmetro.com/cables</link>
+    <description>Verifiable, print-resilient situational awareness documents.</description>
+    <lastBuildDate>Sun, 21 Dec 2025 14:43:11 +0000</lastBuildDate>
+    <language>en-us</language>
+    <item>
+      <title>MSPM-CBL-2025-12-20-001</title>
+      <link>https://www.mspmetro.com/cables/MSPM-CBL-2025-12-20-001</link>
+      <guid isPermaLink="false">D268278243A23C06D3F7357ACFC2BCFC00F2526FA1CAF9A1175E60A628C1FF61</guid>
+      <pubDate>Sat, 20 Dec 2025 14:30:00 +0000</pubDate>
+      <description>This is a sample Cable used to validate the build pipeline and the locked format.</description>
+      <enclosure url="https://www.mspmetro.com/cables/pdf/MSPM-CBL-2025-12-20-001.pdf" type="application/pdf" />
+      <content:encoded><![CDATA[<main>
+      <header>
+        <h1>MSPM-CBL-2025-12-20-001</h1>
+      </header>
+
+      <div class="marker cable_marker">START CABLE</div>
+
+      <h2>SUMMARY</h2>
+<p>This is a sample Cable used to validate the build pipeline and the locked format.</p>
+<h2>FACTS</h2>
+<ul>
+<li>Source Markdown is ASCII-only.</li>
+<li>The build produces HTML, PDF, and a feed entry.</li>
+<li>The SHA-256 value is computed from canonical text derived from this source.</li>
+</ul>
+<h2>ASSESSMENT</h2>
+<p>This repository scaffolds the end-to-end artifact generation and strict lint rules.</p>
+<h2>OUTLOOK</h2>
+<p>Future Cables replace this placeholder content with operational situational awareness.</p>
+
+      <div class="marker cable_marker">END CABLE</div>
+
+      <div class="marker verify_marker">START VERIFICATION</div>
+
+      <section class="verify">
+        <div class="verify_label">Verification</div>
+        <div class="verify_fields">
+          <div>UTC: 2025-12-20T14:30Z</div>
+          <div>SHA256: D268278243A23C06D3F7357ACFC2BCFC00F2526FA1CAF9A1175E60A628C1FF61</div>
+          <div>SIG: ED25519-MSPM-Q4D9Z3W1KP7H8C</div>
+          <div>Canonical: https://www.mspmetro.com/cables/MSPM-CBL-2025-12-20-001</div>
+        </div>
+        <div class="verify_aztec">
+          <img alt="Aztec code" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALoAAAC6AQAAAAAxdWpcAAABfUlEQVR42s2XsY3lMBBDn74MXDjuYEtRCVvS4pd0Hcwv6AD9fAxeMLaxyaY7cmAIUCCCpDgUmAL6HJiCAQNzyR/88P3GBn2OLvWJ5Lr/k1pUkkuOeZ9DEuYBC3BFn0PyLu9S6liOKkxxIlEq2OfAqrmSJGHCHBMJT/Woui6ulPex3u0wUkTJwyRJc5SjCnNdYZWQVriDYcL0nbrMrmpfecCpnZTrXo0qAyHMT+pA87cO/3mj7WzmW8KTA20vz6tH8Ir3F3C01nYwx569fA7OgXmYhynMY4kUfRwfzzjXLwB7Hvvr2Mu5uulKrsjmUIpqw3wLb8C7YWB/t3+feu/FKQrpq7TTPX2KuQIYB7QL5J+gUT4H1Sfc2W6KBXr7me3fKwQjrByVZ6GCkV1rhekcpkyDfH8FLNHbGdKZ6kla1wq+8lvHPtEcK3B1NRlJ6vMMh6D8lXraOwNB11u1vrcnmDn6mVfSAk0mx03KJ6nLy1tf+3jC2CAYYcoaU+2r/5H4hXz2h7boAAAAAElFTkSuQmCC" />
+          <div class="id">MSPM-CBL-2025-12-20-001</div>
+        </div>
+      </section>
+
+      <div class="marker verify_marker">END VERIFICATION</div>
+    </main>]]></content:encoded>
+    </item>
+  </channel>
+</rss>

@@ -12,33 +12,33 @@
         | default(lookup('env', 'PUBLISH_ORIGIN_GLOBAL'), true)
         | default(lookup('env', 'ORIGIN_GLOBAL'), true)
       }}
-    edge_world_origin: >-
+    edge_do_origin: >-
       {{
-        lookup('env', 'EDGE_WORLD_ORIGIN')
+        lookup('env', 'EDGE_ORIGIN_DO')
+        | default(lookup('env', 'PUBLISH_ORIGIN_DO'), true)
         | default(lookup('env', 'DO_ORIGIN_BASE_URL'), true)
-        | default(lookup('env', 'PUBLISH_ORIGIN_WORLD'), true)
-        | default(lookup('env', 'ORIGIN_WORLD'), true)
+        | default(lookup('env', 'ORIGIN_DO'), true)
       }}
-    edge_earth_origin: >-
+    edge_het_origin: >-
       {{
-        lookup('env', 'EDGE_EARTH_ORIGIN')
-        | default(lookup('env', 'EARTH_ORIGIN_BASE_URL'), true)
-        | default(lookup('env', 'PUBLISH_ORIGIN_EARTH'), true)
-        | default(lookup('env', 'ORIGIN_EARTH'), true)
+        lookup('env', 'EDGE_ORIGIN_HET')
+        | default(lookup('env', 'PUBLISH_ORIGIN_HET'), true)
+        | default(lookup('env', 'HET_ORIGIN_BASE_URL'), true)
+        | default(lookup('env', 'ORIGIN_HET'), true)
       }}
 
   tasks:
-    - name: Ensure global origin is set
+    - name: Ensure origin-scw is set
       ansible.builtin.assert:
         that:
           - edge_global_origin | length > 0
-        fail_msg: "Global origin is empty; set PUBLISH_ORIGIN_GLOBAL (or EDGE_GLOBAL_ORIGIN)."
+        fail_msg: "Origin-scw is empty; set PUBLISH_ORIGIN_SCW (or EDGE_ORIGIN_SCW / EDGE_GLOBAL_ORIGIN)."
 
-    - name: Ensure world origin is set
+    - name: Ensure origin-do is set
       ansible.builtin.assert:
         that:
-          - edge_world_origin | length > 0
-        fail_msg: "World origin is empty; set PUBLISH_ORIGIN_WORLD (or EDGE_WORLD_ORIGIN)."
+          - edge_do_origin | length > 0
+        fail_msg: "Origin-do is empty; set PUBLISH_ORIGIN_DO (or EDGE_ORIGIN_DO)."
 
     - name: Fetch global manifests/latest.json
       ansible.builtin.uri:
@@ -47,30 +47,30 @@
         return_content: true
       register: global_manifest
 
-    - name: Fetch world manifests/latest.json
+    - name: Fetch origin-do manifests/latest.json
       ansible.builtin.uri:
-        url: "{{ edge_world_origin }}/manifests/latest.json"
+        url: "{{ edge_do_origin }}/manifests/latest.json"
         method: GET
         return_content: true
-      register: world_manifest
+      register: do_manifest
 
-    - name: Fetch earth manifests/latest.json (optional)
+    - name: Fetch origin-het manifests/latest.json (optional)
       ansible.builtin.uri:
-        url: "{{ edge_earth_origin }}/manifests/latest.json"
+        url: "{{ edge_het_origin }}/manifests/latest.json"
         method: GET
         return_content: true
-      register: earth_manifest
-      when: edge_earth_origin | length > 0
+      register: het_manifest
+      when: edge_het_origin | length > 0
 
     - name: Set manifest versions
       ansible.builtin.set_fact:
         mspmetro_global_version: "{{ (global_manifest.content | from_json).version }}"
-        mspmetro_world_version: "{{ (world_manifest.content | from_json).version }}"
+        mspmetro_do_version: "{{ (do_manifest.content | from_json).version }}"
 
-    - name: Set earth manifest version (optional)
+    - name: Set origin-het manifest version (optional)
       ansible.builtin.set_fact:
-        mspmetro_earth_version: "{{ (earth_manifest.content | from_json).version }}"
-      when: edge_earth_origin | length > 0
+        mspmetro_het_version: "{{ (het_manifest.content | from_json).version }}"
+      when: edge_het_origin | length > 0
 
     - name: Print versions
       ansible.builtin.debug:
@@ -78,12 +78,12 @@
           {{
             [
               "global origin: %s (version=%s)" | format(edge_global_origin, mspmetro_global_version),
-              "world  origin: %s (version=%s)" | format(edge_world_origin, mspmetro_world_version)
+              "origin-do: %s (version=%s)" | format(edge_do_origin, mspmetro_do_version)
             ]
             + (
-              (edge_earth_origin | length > 0)
+              (edge_het_origin | length > 0)
               | ternary(
-                  ["earth  origin: %s (version=%s)" | format(edge_earth_origin, mspmetro_earth_version)],
+                  ["origin-het: %s (version=%s)" | format(edge_het_origin, mspmetro_het_version)],
                   []
                 )
             )
@@ -103,10 +103,13 @@
         expected_versions: >-
           {{
             (
-              ('mspmetro_edge_us' in group_names)
+              (
+                ('mspmetro_edge_us' in group_names)
+                or ('mspmetro_edge_do' in group_names)
+              )
               | ternary(
-                  [hostvars['localhost'].mspmetro_world_version, hostvars['localhost'].mspmetro_global_version],
-                  [hostvars['localhost'].mspmetro_global_version, hostvars['localhost'].mspmetro_world_version]
+                  [hostvars['localhost'].mspmetro_do_version, hostvars['localhost'].mspmetro_global_version],
+                  [hostvars['localhost'].mspmetro_global_version, hostvars['localhost'].mspmetro_do_version]
                 )
             )
           }}

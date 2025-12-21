@@ -1,0 +1,10 @@
+[Unit]
+Description=Run MSPMetro origin-do public-read ACL enforcement
+
+[Timer]
+OnBootSec=2m
+OnUnitActiveSec=5m
+Unit=mspmetro-origin-do-publicize.service
+
+[Install]
+WantedBy=timers.target

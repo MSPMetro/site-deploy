@@ -1,10 +1,12 @@
 .PHONY: setup run run-static run-backend setup-backend migrate-backend seed-backend run-ui db-up db-down test lint fmt
-.PHONY: deploy-edge-eur setup-publisher build-site publish-origin publish-edge-global publish-edge-world publish-edge-earth publish-origins deploy-brief verify-brief verify-public publish-ipns
+.PHONY: deploy-edge-eur setup-publisher build-site publish-origin publish-edge-global publish-edge-do publish-edge-het publish-origins deploy-brief deploy-edges verify-brief verify-public publish-ipns yolo health
 .PHONY: verify-origins
-.PHONY: minio-publisher minio-replication publish-minio verify-minio-replication publicize-world deploy-brief-minio
-.PHONY: do-cdn-list do-world-cdn-set-domain do-world-cdn-purge
-.PHONY: do-world-bind-domain
+.PHONY: minio-publisher minio-replication publish-minio verify-minio-replication publicize-origin-do deploy-brief-minio
+.PHONY: do-cdn-list do-origin-do-cdn-set-domain do-origin-do-cdn-purge
+.PHONY: do-origin-do-bind-domain
 .PHONY: rebuild-publish
+
+export PUBLISH_VERSION ?= $(shell python3 -c 'from datetime import datetime, timezone; print(datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"))')
 
 setup:
 	@echo "Run one of: make setup-backend, cargo build -p mspmetro-ui"
@@ -48,7 +50,7 @@ fmt:
 	@echo "No formatter configured yet."
 
 deploy-edge-eur:
-	@ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i 'edge.eur.mspmetro.com,' -u root ops/ansible/site.yml
+	@ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i 'edge-eur.mspmetro.com,' -u root ops/ansible/site.yml
 
 setup-publisher:
 	@python3 -m venv .venv-publisher
@@ -70,50 +72,55 @@ publish-edge-global: setup-publisher build-site
 	S3_BUCKET="$${S3_BUCKET:-$${S3_BUCKET_GLOBAL:-$${BUCKET:-}}}"; \
 	S3_ENDPOINT_URL="$${S3_ENDPOINT_URL:-$${SCW_ENDPOINT:-https://s3.fr-par.scw.cloud}}"; \
 	S3_REGION="$${S3_REGION:-us-east-1}"; \
+	S3_ADDRESSING_STYLE="$${S3_ADDRESSING_STYLE:-$${SCW_S3_ADDRESSING_STYLE:-auto}}"; \
 	ORIGIN_BASE_URL="$${ORIGIN_BASE_URL:-$${EDGE_GLOBAL_ORIGIN:-$${PUBLISH_ORIGIN_GLOBAL:-$${ORIGIN_GLOBAL:-}}}}"; \
-	export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY S3_BUCKET S3_ENDPOINT_URL S3_REGION ORIGIN_BASE_URL; \
+	export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY S3_BUCKET S3_ENDPOINT_URL S3_REGION S3_ADDRESSING_STYLE ORIGIN_BASE_URL; \
 	.venv-publisher/bin/python scripts/publish_s3.py'
 
-# Publish to the DigitalOcean origin used by edges (edge.world).
-# Expects DO_* variables (see .env.example) or the older DO_SPACES_* / S3_BUCKET_WORLD names.
-publish-edge-world: setup-publisher build-site
+# Publish to the DigitalOcean origin used by edges (origin-do).
+# Expects DO_* variables (see .env.example).
+publish-edge-do: setup-publisher build-site
 	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; \
 	AWS_ACCESS_KEY_ID="$${DO_AWS_ACCESS_KEY_ID:-$${DO_SPACES_ACCESS_KEY:-}}"; \
 	AWS_SECRET_ACCESS_KEY="$${DO_AWS_SECRET_ACCESS_KEY:-$${DO_SPACES_SECRET_KEY:-}}"; \
-	S3_BUCKET="$${DO_S3_BUCKET:-$${S3_BUCKET_WORLD:-}}"; \
+	S3_BUCKET="$${DO_S3_BUCKET:-}"; \
 	S3_ENDPOINT_URL="$${DO_S3_ENDPOINT_URL:-$${DO_SPACES_ENDPOINT:-}}"; \
 	S3_REGION="$${DO_S3_REGION:-$${DO_SPACES_REGION:-us-east-1}}"; \
 	S3_ADDRESSING_STYLE="$${DO_S3_ADDRESSING_STYLE:-path}"; \
-	ORIGIN_BASE_URL="$${DO_ORIGIN_BASE_URL:-$${EDGE_WORLD_ORIGIN:-$${PUBLISH_ORIGIN_WORLD:-$${ORIGIN_WORLD:-}}}}"; \
+	ORIGIN_BASE_URL="$${DO_ORIGIN_BASE_URL:-$${PUBLISH_ORIGIN_DO:-}}"; \
 	export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY S3_BUCKET S3_ENDPOINT_URL S3_REGION S3_ADDRESSING_STYLE ORIGIN_BASE_URL; \
 	.venv-publisher/bin/python scripts/publish_s3.py'
 
-# Publish to the third "earth" origin (S3-compatible; provider-agnostic).
-# Configure via EARTH_* vars, or S3_BUCKET_EARTH + PUBLISH_ORIGIN_EARTH.
-publish-edge-earth: setup-publisher build-site
+# Publish to the third origin (S3-compatible; provider-agnostic, typically Hetzner).
+# Configure via HETZNER_* vars or PUBLISH_ORIGIN_HET.
+publish-edge-het: setup-publisher build-site
 	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; \
-	AWS_ACCESS_KEY_ID="$${EARTH_AWS_ACCESS_KEY_ID:-$${EARTH_ACCESS_KEY:-$${HETZNER_ACCESS_KEY:-}}}"; \
-	AWS_SECRET_ACCESS_KEY="$${EARTH_AWS_SECRET_ACCESS_KEY:-$${EARTH_SECRET_KEY:-$${HETZNER_SECRET_KEY:-}}}"; \
-	S3_BUCKET="$${EARTH_S3_BUCKET:-$${S3_BUCKET_EARTH:-$${S3_BUCKET_EUR:-}}}"; \
-	S3_ENDPOINT_URL="$${EARTH_S3_ENDPOINT_URL:-$${EARTH_ENDPOINT_URL:-$${EARTH_ENDPOINT:-$${HETZNER_ENDPOINT:-}}}}"; \
-	S3_REGION="$${EARTH_S3_REGION:-$${EARTH_REGION:-$${HETZNER_REGION:-us-east-1}}}"; \
-	S3_ADDRESSING_STYLE="$${EARTH_S3_ADDRESSING_STYLE:-$${EARTH_ADDRESSING_STYLE:-auto}}"; \
-	ORIGIN_BASE_URL="$${EARTH_ORIGIN_BASE_URL:-$${PUBLISH_ORIGIN_EARTH:-$${ORIGIN_EARTH:-}}}"; \
+	AWS_ACCESS_KEY_ID="$${HETZNER_ACCESS_KEY:-}"; \
+	AWS_SECRET_ACCESS_KEY="$${HETZNER_SECRET_KEY:-}"; \
+	S3_BUCKET="$${HETZNER_S3_BUCKET:-$${S3_BUCKET_EUR:-}}"; \
+	S3_ENDPOINT_URL="$${HETZNER_S3_ENDPOINT_URL:-$${HETZNER_ENDPOINT:-}}"; \
+	S3_REGION="$${HETZNER_S3_REGION:-$${HETZNER_REGION:-us-east-1}}"; \
+	S3_ADDRESSING_STYLE="$${HETZNER_S3_ADDRESSING_STYLE:-auto}"; \
+	ORIGIN_BASE_URL="$${HET_ORIGIN_BASE_URL:-$${PUBLISH_ORIGIN_HET:-}}"; \
 	export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY S3_BUCKET S3_ENDPOINT_URL S3_REGION S3_ADDRESSING_STYLE ORIGIN_BASE_URL; \
-	[ -n "$$S3_BUCKET" ] && [ -n "$$S3_ENDPOINT_URL" ] && [ -n "$$ORIGIN_BASE_URL" ] || { echo "earth origin not configured; set EARTH_S3_BUCKET/EARTH_S3_ENDPOINT_URL/EARTH_ORIGIN_BASE_URL (or S3_BUCKET_EARTH/PUBLISH_ORIGIN_EARTH)" >&2; exit 2; }; \
+	[ -n "$$S3_BUCKET" ] && [ -n "$$S3_ENDPOINT_URL" ] && [ -n "$$ORIGIN_BASE_URL" ] || { echo "origin-het not configured; set HETZNER_S3_BUCKET/HETZNER_S3_ENDPOINT_URL/HET_ORIGIN_BASE_URL (or PUBLISH_ORIGIN_HET)" >&2; exit 2; }; \
 	.venv-publisher/bin/python scripts/publish_s3.py'
 
 publish-origins: setup-publisher build-site
 	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; \
-	PUBLISH_VERSION="$${PUBLISH_VERSION:-$$(python3 -c \"from datetime import datetime,timezone; print(datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ'))\")}\"; \
-	export PUBLISH_VERSION; \
-	$(MAKE) publish-edge-global publish-edge-world publish-edge-earth'
+	$(MAKE) publish-edge-global publish-edge-do publish-edge-het'
 
 deploy-brief:
 	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; cargo build --release --bin cityfeed-puller; ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i ops/ansible/inventory.ini ops/ansible/deploy_brief.yml'
 
+deploy-edges:
+	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; cargo build --release --bin cityfeed-puller; ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i ops/ansible/inventory.ini ops/ansible/deploy_edges.yml'
+
+yolo: publish-origins deploy-edges health
+	@echo "OK: build + publish + edge deploy complete."
+
 deploy-brief-minio:
-	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; cargo build --release --bin cityfeed-puller; $(MAKE) publish-minio verify-minio-replication publicize-world verify-origins; ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i ops/ansible/inventory.ini ops/ansible/deploy_edges.yml'
+	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; cargo build --release --bin cityfeed-puller; $(MAKE) publish-minio verify-minio-replication publicize-origin-do verify-origins; ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i ops/ansible/inventory.ini ops/ansible/deploy_edges.yml'
 
 rebuild-publish:
 	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i ops/ansible/inventory.ini ops/ansible/rebuild_publish.yml'
@@ -126,6 +133,9 @@ verify-public:
 
 verify-origins:
 	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; bash scripts/verify_origins.sh'
+
+health:
+	@bash scripts/health_check.sh
 
 publish-ipns:
 	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i ops/ansible/inventory.ini ops/ansible/publish_ipns.yml'
@@ -142,42 +152,43 @@ minio-replication:
 	@bash -lc 'set -euo pipefail; : "$${PUBLISHER_HOST:?set PUBLISHER_HOST}"; set -a; [ -f .env ] && source .env; set +a; ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i "$${PUBLISHER_HOST}," -u root ops/ansible/minio_replication.yml'
 
 # Publish to MinIO on the publisher host using SSH port-forwarding (CLI-only).
-PUBLISHER_SSH ?= root@144.76.5.115
+# Default to the stable hostname (IPs can change).
+PUBLISHER_SSH ?= root@source.mspmetro.com
 publish-minio: build-site
 	@bash scripts/publish_to_minio_over_ssh.sh --host "$(PUBLISHER_SSH)"
 
 verify-minio-replication:
-	@ssh "$(PUBLISHER_SSH)" 'set -euo pipefail; source /etc/mspmetro/env; mc alias set minio http://127.0.0.1:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" --api s3v4 --path auto >/dev/null; mc stat minio/mspmetro-site/manifests/latest.json >/dev/null; sudo -u mspmetro-repl -H mc stat global/pull/manifests/latest.json >/dev/null; sudo -u mspmetro-repl -H mc stat world/mspmetro-world/manifests/latest.json >/dev/null; sudo -u mspmetro-repl -H mc stat earth/mspmetro-eur/manifests/latest.json >/dev/null; echo OK'
+	@ssh "$(PUBLISHER_SSH)" 'set -euo pipefail; source /etc/mspmetro/env; mc alias set minio http://127.0.0.1:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" --api s3v4 --path auto >/dev/null; mc stat minio/mspmetro-site/manifests/latest.json >/dev/null; for n in global origin-do origin-het; do f="/etc/default/mspmetro-minio-replicate-$${n}"; if [[ -f "$$f" ]]; then source "$$f"; sudo -u mspmetro-repl -H mc stat "$${DST_ALIAS}/$${DST_BUCKET}/manifests/latest.json" >/dev/null; fi; done; echo OK'
 
 # DigitalOcean Spaces often replicates private objects; enforce public-read ACL on the destination.
 # (No-op on publishers that don't have the helper installed.)
-publicize-world:
-	@ssh "$(PUBLISHER_SSH)" 'set -euo pipefail; if systemctl list-unit-files --no-legend | grep -q "^mspmetro-world-publicize\\.service\\b"; then systemctl start mspmetro-world-publicize.service; echo OK; else echo "SKIP: mspmetro-world-publicize.service not installed"; fi'
+publicize-origin-do:
+	@ssh "$(PUBLISHER_SSH)" 'set -euo pipefail; if systemctl list-unit-files --no-legend | grep -q "^mspmetro-origin-do-publicize\\.service\\b"; then systemctl start mspmetro-origin-do-publicize.service; echo OK; else echo "SKIP: mspmetro-origin-do-publicize.service not installed"; fi'
 
 # DigitalOcean CDN management (requires DIGITALOCEAN_ACCESS_TOKEN in .env).
 do-cdn-list:
 	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; python3 scripts/do_cdn.py list'
 
 # Usage:
-#   DIGITALOCEAN_ACCESS_TOKEN=... make do-world-cdn-set-domain DO_WORLD_CUSTOM_DOMAIN=world.mspmetro.com DO_WORLD_CERTIFICATE_ID=...
+#   DIGITALOCEAN_ACCESS_TOKEN=... make do-origin-do-cdn-set-domain DO_ORIGIN_CUSTOM_DOMAIN=origin-do.mspmetro.com DO_ORIGIN_HOST=origin-do.sfo3.digitaloceanspaces.com DO_ORIGIN_CERTIFICATE_ID=...
 # Or upload a custom cert in one go:
-#   make do-world-cdn-set-domain DO_WORLD_CUSTOM_DOMAIN=world.mspmetro.com DO_WORLD_CUSTOM_CERT_NAME=world-mspmetro-com DO_WORLD_CUSTOM_CERT_LEAF=/path/fullchain.pem DO_WORLD_CUSTOM_CERT_KEY=/path/privkey.pem
-do-world-cdn-set-domain:
+#   make do-origin-do-cdn-set-domain DO_ORIGIN_CUSTOM_DOMAIN=origin-do.mspmetro.com DO_ORIGIN_HOST=origin-do.sfo3.digitaloceanspaces.com DO_ORIGIN_CUSTOM_CERT_NAME=origin-do-mspmetro-com DO_ORIGIN_CUSTOM_CERT_LEAF=/path/fullchain.pem DO_ORIGIN_CUSTOM_CERT_KEY=/path/privkey.pem
+do-origin-do-cdn-set-domain:
 	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; \
-	: "$${DO_WORLD_CUSTOM_DOMAIN:?set DO_WORLD_CUSTOM_DOMAIN}"; \
-	ORIGIN="mspmetro-world.sfo3.digitaloceanspaces.com"; \
-	ARGS=(set-domain --origin "$$ORIGIN" --custom-domain "$${DO_WORLD_CUSTOM_DOMAIN}" --ttl "$${DO_WORLD_TTL:-3600}"); \
-	if [[ -n "$${DO_WORLD_CERTIFICATE_ID:-}" ]]; then ARGS+=(--certificate-id "$${DO_WORLD_CERTIFICATE_ID}"); fi; \
-	if [[ -n "$${DO_WORLD_LE_CERT_NAME:-}" ]]; then ARGS+=(--le-cert-name "$${DO_WORLD_LE_CERT_NAME}"); fi; \
-	if [[ -n "$${DO_WORLD_CUSTOM_CERT_NAME:-}" ]]; then \
-	  : "$${DO_WORLD_CUSTOM_CERT_LEAF:?set DO_WORLD_CUSTOM_CERT_LEAF}"; : "$${DO_WORLD_CUSTOM_CERT_KEY:?set DO_WORLD_CUSTOM_CERT_KEY}"; \
-	  ARGS+=(--custom-cert-name "$${DO_WORLD_CUSTOM_CERT_NAME}" --custom-cert-leaf "$${DO_WORLD_CUSTOM_CERT_LEAF}" --custom-cert-key "$${DO_WORLD_CUSTOM_CERT_KEY}"); \
-	  if [[ -n "$${DO_WORLD_CUSTOM_CERT_CHAIN:-}" ]]; then ARGS+=(--custom-cert-chain "$${DO_WORLD_CUSTOM_CERT_CHAIN}"); fi; \
+	: "$${DO_ORIGIN_CUSTOM_DOMAIN:?set DO_ORIGIN_CUSTOM_DOMAIN}"; \
+	: "$${DO_ORIGIN_HOST:?set DO_ORIGIN_HOST}"; \
+	ARGS=(set-domain --origin "$${DO_ORIGIN_HOST}" --custom-domain "$${DO_ORIGIN_CUSTOM_DOMAIN}" --ttl "$${DO_ORIGIN_TTL:-3600}"); \
+	if [[ -n "$${DO_ORIGIN_CERTIFICATE_ID:-}" ]]; then ARGS+=(--certificate-id "$${DO_ORIGIN_CERTIFICATE_ID}"); fi; \
+	if [[ -n "$${DO_ORIGIN_LE_CERT_NAME:-}" ]]; then ARGS+=(--le-cert-name "$${DO_ORIGIN_LE_CERT_NAME}"); fi; \
+	if [[ -n "$${DO_ORIGIN_CUSTOM_CERT_NAME:-}" ]]; then \
+	  : "$${DO_ORIGIN_CUSTOM_CERT_LEAF:?set DO_ORIGIN_CUSTOM_CERT_LEAF}"; : "$${DO_ORIGIN_CUSTOM_CERT_KEY:?set DO_ORIGIN_CUSTOM_CERT_KEY}"; \
+	  ARGS+=(--custom-cert-name "$${DO_ORIGIN_CUSTOM_CERT_NAME}" --custom-cert-leaf "$${DO_ORIGIN_CUSTOM_CERT_LEAF}" --custom-cert-key "$${DO_ORIGIN_CUSTOM_CERT_KEY}"); \
+	  if [[ -n "$${DO_ORIGIN_CUSTOM_CERT_CHAIN:-}" ]]; then ARGS+=(--custom-cert-chain "$${DO_ORIGIN_CUSTOM_CERT_CHAIN}"); fi; \
 	fi; \
 	python3 scripts/do_cdn.py "$${ARGS[@]}"'
 
-do-world-cdn-purge:
-	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; python3 scripts/do_cdn.py purge --origin "mspmetro-world.sfo3.digitaloceanspaces.com"'
+do-origin-do-cdn-purge:
+	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; : "$${DO_ORIGIN_HOST:?set DO_ORIGIN_HOST}"; python3 scripts/do_cdn.py purge --origin "$${DO_ORIGIN_HOST}"'
 
 # Issue a DNS-01 certificate via Scaleway DNS (lego), then upload+attach it to the DO CDN endpoint.
 # Requires:
@@ -186,6 +197,6 @@ do-world-cdn-purge:
 # - Domain DNS in Scaleway (so TXT records can be created)
 #
 # Usage:
-#   make do-world-bind-domain DO_WORLD_CUSTOM_DOMAIN=origin-us.mspmetro.com
-do-world-bind-domain:
-	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; : "$${DO_WORLD_CUSTOM_DOMAIN:?set DO_WORLD_CUSTOM_DOMAIN}"; bash scripts/do_world_bind_domain.sh "$${DO_WORLD_CUSTOM_DOMAIN}"'
+#   make do-origin-do-bind-domain DO_ORIGIN_CUSTOM_DOMAIN=origin-do.mspmetro.com DO_ORIGIN_HOST=origin-do.sfo3.digitaloceanspaces.com
+do-origin-do-bind-domain:
+	@bash -lc 'set -euo pipefail; set -a; [ -f .env ] && source .env; set +a; : "$${DO_ORIGIN_CUSTOM_DOMAIN:?set DO_ORIGIN_CUSTOM_DOMAIN}"; bash scripts/do_origin_do_bind_domain.sh "$${DO_ORIGIN_CUSTOM_DOMAIN}"'

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MSPMetro Cables</title>
+    <link rel="canonical" href="https://www.mspmetro.com/cables" />
+    <style>
+      :root { color-scheme: light; }
+      @font-face { font-family: "Oswald"; src: url("/static/fonts/oswald-v57-latin-regular.woff2") format("woff2"); font-style: normal; font-weight: 400; font-display: swap; }
+      @font-face { font-family: "Intel One Mono"; src: url("/static/fonts/IntelOneMono-Regular.otf") format("opentype"); font-style: normal; font-weight: 400; font-display: swap; }
+      body { font-family: "Intel One Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; margin: 0; padding: 0; color: #111; }
+      main { max-width: 980px; margin: 32px auto; padding: 0 20px; }
+      h1 { font-family: "Oswald", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size: 22px; margin: 0 0 8px; letter-spacing: 0.02em; }
+      p, li { font-size: 14px; line-height: 1.4; }
+      .meta { font-size: 13px; color: #333; margin: 0 0 18px; }
+      .actions { margin: 16px 0 18px; font-size: 14px; }
+      .day { margin: 22px 0 10px; }
+      .day h2 { font-family: "Oswald", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size: 16px; margin: 0 0 8px; letter-spacing: 0.02em; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 8px 8px; vertical-align: top; border-bottom: 1px solid #e6e6e6; }
+      th { font-size: 12px; color: #333; font-weight: 600; }
+      td { font-size: 13px; }
+      td.mono { font-family: "Intel One Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
+      a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>MSPMetro Cables</h1>
+      <p class="meta">Container page linking multiple Cables. Use the ZIP links for bulk download.</p>
+      <div class="actions">
+        <div><a href="{{ all_pdfs_zip_href }}">Download all PDFs (.zip)</a></div>
+      </div>
+
+      {{ day_blocks_html }}
+    </main>
+  </body>
+</html>

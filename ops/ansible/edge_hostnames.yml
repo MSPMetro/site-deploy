@@ -1,7 +1,7 @@
 ---
 # Ensure additional hostnames resolve to each edge site block in Caddy.
 #
-# This is used when you add vanity DNS like eur.mspmetro.com -> edge.eur.mspmetro.com
+# This is used when you add vanity DNS like eur.mspmetro.com -> edge-eur.mspmetro.com
 # but want Caddy to actually serve the hostname (and obtain/serve the correct TLS cert).
 #
 # Inventory vars:
@@ -61,4 +61,3 @@
         name: caddy
         state: reloaded
       changed_when: false
-

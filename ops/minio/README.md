@@ -8,7 +8,7 @@ This document adds an alternative architecture:
 - **Fanout replication**: replicate from MinIO to multiple S3-compatible providers (DigitalOcean, Scaleway, etc).
 - **Read-only edges**: edges continue to pull from their nearest origin and serve locally.
 
-Important: MinIO does **not** fix TLS on CDN vanity hostnames by itself. `world.mspmetro.com` / `global.mspmetro.com` / `earth.mspmetro.com` must still be provisioned with a valid certificate at the CDN/provider.
+Important: MinIO does **not** fix TLS on CDN vanity hostnames by itself. If you use vanity domains, they must be provisioned with a valid certificate at the CDN/provider. MSPMetro’s recommended setup is to treat origins as provider bucket URLs (`origin-scw`, `origin-do`, `origin-het`) and have edges pull directly from them.
 
 ## Components
 
@@ -45,7 +45,7 @@ Create `/etc/mspmetro/replication.env` with:
 - `MINIO_ENDPOINT_URL=http://127.0.0.1:9000`
 - `MINIO_BUCKET=mspmetro-site`
 - `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` (can be root creds initially)
-- For each remote (global/world/earth):
+- For each remote (global/origin-do/origin-het):
   - `REMOTE_<NAME>_ENDPOINT_URL`
   - `REMOTE_<NAME>_BUCKET`
   - `REMOTE_<NAME>_ACCESS_KEY`
@@ -71,8 +71,8 @@ ansible-playbook -i 'YOUR_PUBLISHER_HOST,' -u root ops/ansible/minio_replication
 This sets up a dedicated `mspmetro-repl` user and three `systemd` services:
 
 - `mspmetro-minio-replicate@global.service`
-- `mspmetro-minio-replicate@world.service`
-- `mspmetro-minio-replicate@earth.service` (optional if configured)
+- `mspmetro-minio-replicate@origin-do.service`
+- `mspmetro-minio-replicate@origin-het.service` (optional if configured)
 
 Each service continuously mirrors `minio/mspmetro-site` to the corresponding remote bucket and propagates deletes (`--remove`).
 

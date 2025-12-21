@@ -48,33 +48,35 @@
     # Origins are read from the controller environment (usually via `.env`).
     edge_global_origin: >-
       {{
-        lookup('env', 'EDGE_GLOBAL_ORIGIN')
+        lookup('env', 'EDGE_ORIGIN_SCW')
+        | default(lookup('env', 'PUBLISH_ORIGIN_SCW'), true)
+        | default(lookup('env', 'EDGE_GLOBAL_ORIGIN'), true)
         | default(lookup('env', 'ORIGIN_BASE_URL'), true)
         | default(lookup('env', 'PUBLISH_ORIGIN_GLOBAL'), true)
         | default(lookup('env', 'ORIGIN_GLOBAL'), true)
       }}
-    edge_world_origin: >-
+    edge_do_origin: >-
       {{
-        lookup('env', 'EDGE_WORLD_ORIGIN')
+        lookup('env', 'EDGE_ORIGIN_DO')
+        | default(lookup('env', 'PUBLISH_ORIGIN_DO'), true)
         | default(lookup('env', 'DO_ORIGIN_BASE_URL'), true)
-        | default(lookup('env', 'PUBLISH_ORIGIN_WORLD'), true)
-        | default(lookup('env', 'ORIGIN_WORLD'), true)
+        | default(lookup('env', 'ORIGIN_DO'), true)
       }}
-    edge_earth_origin: >-
+    edge_het_origin: >-
       {{
-        lookup('env', 'EDGE_EARTH_ORIGIN')
-        | default(lookup('env', 'EARTH_ORIGIN_BASE_URL'), true)
-        | default(lookup('env', 'PUBLISH_ORIGIN_EARTH'), true)
-        | default(lookup('env', 'ORIGIN_EARTH'), true)
+        lookup('env', 'EDGE_ORIGIN_HET')
+        | default(lookup('env', 'PUBLISH_ORIGIN_HET'), true)
+        | default(lookup('env', 'HET_ORIGIN_BASE_URL'), true)
+        | default(lookup('env', 'ORIGIN_HET'), true)
       }}
 
   tasks:
-    - name: Ensure both origins are configured (required for redundancy)
+    - name: Ensure origin-scw + origin-do origins are configured (required for redundancy)
       ansible.builtin.assert:
         that:
           - edge_global_origin | length > 0
-          - edge_world_origin | length > 0
-        fail_msg: "Missing origin(s); set PUBLISH_ORIGIN_GLOBAL and PUBLISH_ORIGIN_WORLD in .env before deploying."
+          - edge_do_origin | length > 0
+        fail_msg: "Missing origin(s); set PUBLISH_ORIGIN_SCW (or EDGE_ORIGIN_SCW) and PUBLISH_ORIGIN_DO (or EDGE_ORIGIN_DO) in .env before deploying."
 
     - name: Select briefing origin for this edge
       ansible.builtin.set_fact:
@@ -83,24 +85,24 @@
             (
               (
                 ('mspmetro_edge_us' in group_names)
-                or ('mspmetro_edge_world' in group_names)
+                or ('mspmetro_edge_do' in group_names)
               )
-              and (edge_world_origin | length > 0)
+              and (edge_do_origin | length > 0)
             )
-            | ternary(edge_world_origin, edge_global_origin)
+            | ternary(edge_do_origin, edge_global_origin)
           }}
         mspmetro_brief_origin_secondary: >-
           {{
             (
               (
                 ('mspmetro_edge_us' in group_names)
-                or ('mspmetro_edge_world' in group_names)
+                or ('mspmetro_edge_do' in group_names)
               )
-              and (edge_world_origin | length > 0)
+              and (edge_do_origin | length > 0)
             )
-            | ternary(edge_global_origin, edge_world_origin)
+            | ternary(edge_global_origin, edge_do_origin)
           }}
-        mspmetro_brief_origin_tertiary: "{{ edge_earth_origin }}"
+        mspmetro_brief_origin_tertiary: "{{ edge_het_origin }}"
 
     - name: Ensure cityfeed-puller is installed
       ansible.builtin.copy:

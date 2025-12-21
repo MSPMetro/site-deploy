@@ -3,7 +3,7 @@ set -euo pipefail
 
 domain="${1:-}"
 if [[ -z "$domain" ]]; then
-  echo "usage: $0 <custom-domain>" >&2
+  echo "usage: $0 <domain>" >&2
   exit 2
 fi
 
@@ -57,7 +57,7 @@ echo "Issuing/renewing DNS-01 cert for ${domain} via Scaleway DNS..." >&2
   --accept-tos \
   --dns scaleway \
   --domains "$domain" \
-  run
+  run >/dev/null
 
 cert_dir="${work_dir}/state/certificates"
 leaf="${cert_dir}/${domain}.crt"
@@ -81,15 +81,9 @@ if not m:
 Path("${leaf_single}").write_text(m.group(0) + "\n", encoding="utf-8")
 PY
 
-echo "Uploading+attaching cert to DigitalOcean CDN endpoint for world..." >&2
-
-args=(set-domain --origin "mspmetro-world.sfo3.digitaloceanspaces.com" --custom-domain "$domain" --ttl "${DO_WORLD_TTL:-3600}")
-args+=(--custom-cert-name "mspmetro-world-${domain}-$(date -u +%Y%m%dT%H%M%SZ)")
-args+=(--custom-cert-leaf "$leaf_single" --custom-cert-key "$key")
+echo "OK: ${leaf_single}" >&2
+echo "OK: ${key}" >&2
 if [[ -s "$chain" ]]; then
-  args+=(--custom-cert-chain "$chain")
+  echo "OK: ${chain}" >&2
 fi
 
-python3 "${repo_root}/scripts/do_cdn.py" "${args[@]}"
-
-echo "OK" >&2

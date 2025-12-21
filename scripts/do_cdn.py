@@ -220,9 +220,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_list.set_defaults(func=cmd_list)
 
     p_set = sub.add_parser("set-domain", help="Set CDN custom domain + certificate")
-    p_set.add_argument("--origin", help="Origin hostname (e.g. mspmetro-world.sfo3.digitaloceanspaces.com)")
+    p_set.add_argument("--origin", help="Origin hostname (e.g. origin-do.sfo3.digitaloceanspaces.com)")
     p_set.add_argument("--endpoint-id", help="CDN endpoint id (alternative to --origin)")
-    p_set.add_argument("--custom-domain", required=True, help="Custom domain to serve (e.g. world.mspmetro.com)")
+    p_set.add_argument("--custom-domain", required=True, help="Custom domain to serve (e.g. origin-do.mspmetro.com)")
     p_set.add_argument("--ttl", default="3600", help="TTL seconds (default 3600)")
 
     group = p_set.add_mutually_exclusive_group(required=False)
@@ -236,7 +236,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_set.set_defaults(func=cmd_set_domain)
 
     p_purge = sub.add_parser("purge", help="Purge CDN cache")
-    p_purge.add_argument("--origin", help="Origin hostname (e.g. mspmetro-world.sfo3.digitaloceanspaces.com)")
+    p_purge.add_argument("--origin", help="Origin hostname (e.g. origin-do.sfo3.digitaloceanspaces.com)")
     p_purge.add_argument("--endpoint-id", help="CDN endpoint id (alternative to --origin)")
     p_purge.add_argument("--files", nargs="*", help="Files to purge (default: all)")
     p_purge.set_defaults(func=cmd_purge)
@@ -260,4 +260,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

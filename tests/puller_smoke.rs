@@ -31,12 +31,7 @@ mod unix_only {
         let version = version.to_string();
         let handle = thread::spawn(move || {
             for req in server.incoming_requests() {
-                let url = req
-                    .url()
-                    .split('?')
-                    .next()
-                    .unwrap_or(req.url())
-                    .to_string();
+                let url = req.url().split('?').next().unwrap_or(req.url()).to_string();
                 match url.as_str() {
                     "/__quit" => {
                         let _ = req.respond(Response::empty(200));

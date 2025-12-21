@@ -78,11 +78,22 @@
         delete: true
         rsync_opts:
           - "--exclude=.git/"
+          - "--exclude=.env"
+          - "--exclude=.env.*"
           - "--exclude=target/"
+          - "--exclude=build/"
+          - "--exclude=data/cache/"
           - "--exclude=backend/.venv/"
+          - "--exclude=.venv/"
+          - "--exclude=cables/.venv/"
           - "--exclude=.venv-publisher/"
           - "--exclude=**/__pycache__/"
           - "--exclude=*.pyc"
+
+    - name: Ensure cables build dir is writable (remove stale root-owned artifacts)
+      ansible.builtin.file:
+        path: "{{ mspmetro_repo_dir }}/cables/build"
+        state: absent
 
     - name: Ensure repo ownership
       ansible.builtin.file:

@@ -8,23 +8,23 @@
       content="A calm, accessible daily dashboard for news, transit, weather, and events."
     />
 
-    <link rel="stylesheet" href="/static/css/daily.css" />
+    <link rel="stylesheet" href="static/css/daily.css" />
     <link
       rel="preload"
-      href="/static/fonts/AtkinsonHyperlegibleNext-Regular.otf"
+      href="static/fonts/AtkinsonHyperlegibleNext-Regular.otf"
       as="font"
       type="font/otf"
       crossorigin
     />
     <link
       rel="preload"
-      href="/static/fonts/AtkinsonHyperlegibleNext-Bold.otf"
+      href="static/fonts/AtkinsonHyperlegibleNext-Bold.otf"
       as="font"
       type="font/otf"
       crossorigin
     />
-    <link rel="icon" type="image/png" href="/static/favicon.png" />
-    <link rel="apple-touch-icon" href="/static/favicon.png" />
+    <link rel="icon" type="image/png" href="static/favicon.png" />
+    <link rel="apple-touch-icon" href="static/favicon.png" />
     <title>MSPMetro — Daily</title>
   </head>
   <body id="top">
@@ -33,13 +33,21 @@
     <header class="orientation" aria-label="Orientation">
       <div class="wrap">
         <dl class="orientation-grid">
+          <div class="orientation-logo">
+            <dt class="sr-only">MSPMetro</dt>
+            <dd>
+              <a class="brand" href="https://www.mspmetro.com/" aria-label="MSPMetro home">
+                <img src="/static/Logo_SVG.svg" alt="" aria-hidden="true" width="72" height="72" />
+              </a>
+            </dd>
+          </div>
           <div>
             <dt>Day</dt>
-            <dd>Wednesday</dd>
+            <dd>[[ dateInZone "Monday" now "America/Chicago" ]]</dd>
           </div>
           <div>
             <dt>Date</dt>
-            <dd>December 17, 2025</dd>
+            <dd>[[ dateInZone "January 2, 2006" now "America/Chicago" ]]</dd>
           </div>
           <div>
             <dt>Region</dt>
@@ -52,80 +60,94 @@
               <span aria-hidden="true">•</span> Snow after 7pm
             </dd>
           </div>
-          <div>
-            <dt>Sunset</dt>
-            <dd>4:36pm</dd>
+          <div class="orientation-sun">
+            <dt>Sunrise/Sunset</dt>
+            <dd>7:47am / 4:36pm</dd>
+          </div>
+          <div class="orientation-utc">
+            <dt>UTC</dt>
+            <dd>
+              <span class="orientation-utc__value">[[ now.UTC.Format "15:04Z" ]]</span>
+            </dd>
           </div>
         </dl>
       </div>
-      <a class="brand" href="/" aria-label="MSPMetro home">
-        <img
-          src="/static/Logo_SVG.svg"
-          alt=""
-          aria-hidden="true"
-          width="96"
-          height="96"
-        />
-      </a>
+      
     </header>
 
     <nav class="top-nav" aria-label="Primary">
       <div class="wrap">
         <a href="/#weather">Weather</a> · <a href="/#metro">Metro</a> ·
-        <a href="/#world">World</a> · <a href="/#neighbors">Neighbors</a> ·
-        <a href="/#transit">Transit</a> · <a href="/#events">Events</a>
+        <a href="/#world">World</a> · <a href="/neighbors/">Neighbors</a> ·
+        <a href="/#transit">Transit</a> · <a href="/events/">Events</a>
       </div>
     </nav>
 
     <main id="main" class="wrap" tabindex="-1">
       <h1 class="sr-only">MSPMetro Daily Dashboard</h1>
 
-      <section class="status" aria-label="City status">
-        <p class="status__line">
-          <span class="status__label">CITY STATUS:</span> Normal operations<span
-            aria-hidden="true"
-            > · </span
-          >No declared emergencies
+      <section class="feature" aria-labelledby="feature-title">
+        <h2 class="kicker" id="feature-title">
+          <a href="/featured/">FEATURE</a>
+        </h2>
+        <h3 class="feature__hed">
+          <a href="/featured/">Featured story and context</a>
+        </h3>
+        <p class="feature__dek">
+          One story at a time: high-priority context, restrained and sourceable.
         </p>
       </section>
 
-      <section class="alerts" aria-live="polite" aria-atomic="true">
-        <h2 class="kicker" id="alerts-title">ALERTS</h2>
-        <ul class="alert-list" hidden aria-labelledby="alerts-title">
-          <li>
-            <span class="alert-pill" data-severity="advisory">Advisory</span>
-            Winter weather advisory in effect after 7pm; allow extra travel time
-            <span class="alert-source"
-              >Source: National Weather Service (Tier 1)</span
-            >
-          </li>
-          <li>
-            <span class="alert-pill" data-severity="info">Info</span> Minor
-            transit delays possible this evening
-            <span class="alert-source">Source: Metro Transit (Tier 1)</span>
-          </li>
-        </ul>
-        <p class="empty-state">No current alerts or disruptions</p>
-      </section>
+      <div class="front-updates" role="group" aria-label="Status and alerts">
+        <section class="status" aria-label="City status">
+          <p class="status__line">
+            <span class="status__label">CITY STATUS:</span> Normal operations<span
+              aria-hidden="true"
+              > · </span
+            >No declared emergencies
+          </p>
+        </section>
 
-      <section class="glance" aria-label="Today at a glance">
-        <h2 class="kicker" id="glance-title">TODAY AT A GLANCE</h2>
-        <ul class="brief-list" aria-labelledby="glance-title">
-          <li>Snow likely after 7pm; allow extra time for evening errands.</li>
-          <li>Morning roads may refreeze; watch sidewalks and curb cuts.</li>
-          <li>Transit may run slower during the evening peak.</li>
-          <li>Plan sunset earlier than 4:40pm for outdoor stops.</li>
-        </ul>
-      </section>
+        <section class="alerts" aria-live="polite" aria-atomic="true">
+          <h2 class="kicker" id="alerts-title">ALERTS</h2>
+          <ul class="alert-list" hidden aria-labelledby="alerts-title">
+            <li>
+              <span class="alert-pill" data-severity="advisory">Advisory</span>
+              Winter weather advisory in effect after 7pm; allow extra travel time
+              <span class="alert-source"
+                >Source: National Weather Service (Tier 1)</span
+              >
+            </li>
+            <li>
+              <span class="alert-pill" data-severity="info">Info</span> Minor
+              transit delays possible this evening
+              <span class="alert-source">Source: Metro Transit (Tier 1)</span>
+            </li>
+          </ul>
+          <p class="empty-state">No current alerts or disruptions</p>
+        </section>
+      </div>
 
-      <section class="before" aria-label="Before you go">
-        <h2 class="kicker" id="before-title">BEFORE YOU GO</h2>
-        <ul class="brief-list" aria-labelledby="before-title">
-          <li>Charge devices earlier; cold drains batteries faster.</li>
-          <li>Keep a small traction aid if you expect icy sidewalks.</li>
-          <li>For airport runs, check de-icing delays before leaving.</li>
-        </ul>
-      </section>
+      <div class="front-briefs" role="group" aria-label="Briefs">
+        <section class="glance" aria-label="Today at a glance">
+          <h2 class="kicker" id="glance-title">TODAY AT A GLANCE</h2>
+          <ul class="brief-list" aria-labelledby="glance-title">
+            <li>Snow likely after 7pm; allow extra time for evening errands.</li>
+            <li>Morning roads may refreeze; watch sidewalks and curb cuts.</li>
+            <li>Transit may run slower during the evening peak.</li>
+            <li>Plan sunset earlier than 4:40pm for outdoor stops.</li>
+          </ul>
+        </section>
+
+        <section class="before" aria-label="Before you go">
+          <h2 class="kicker" id="before-title">BEFORE YOU GO</h2>
+          <ul class="brief-list" aria-labelledby="before-title">
+            <li>Charge devices earlier; cold drains batteries faster.</li>
+            <li>Keep a small traction aid if you expect icy sidewalks.</li>
+            <li>For airport runs, check de-icing delays before leaving.</li>
+          </ul>
+        </section>
+      </div>
 
       <section id="summary" aria-label="Summary">
         <div class="grid" aria-label="Daily sections">
@@ -701,7 +723,11 @@
         </p>
         <p class="footer-links">
           <a href="/how-we-know/">How we know</a
-          ><span aria-hidden="true"> · </span><a href="/daily/">Daily archive</a>
+          ><span aria-hidden="true"> · </span><a href="/daily/">Daily archive</a><span aria-hidden="true"> · </span><a href="/credits/">Credits</a>
+        </p>
+        <p class="footer-build">
+          Build: colossus<span aria-hidden="true"> · </span>2025-12-21T07:15:14Z
+          <span aria-hidden="true"> · </span>17d2be8
         </p>
       </div>
     </footer>

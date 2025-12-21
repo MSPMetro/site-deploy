@@ -12,13 +12,17 @@ fi
 # Prefer explicit publisher origin URLs when present.
 if [[ "${#origins[@]}" -eq 0 ]]; then
   if [[ -n "${ORIGIN_BASE_URL:-}" ]]; then origins+=("${ORIGIN_BASE_URL}"); fi
+  # Preferred names (SCW/DO/HET).
+  if [[ -n "${PUBLISH_ORIGIN_SCW:-}" ]]; then origins+=("${PUBLISH_ORIGIN_SCW}"); fi
+  if [[ -n "${PUBLISH_ORIGIN_DO:-}" ]]; then origins+=("${PUBLISH_ORIGIN_DO}"); fi
+  if [[ -n "${PUBLISH_ORIGIN_HET:-}" ]]; then origins+=("${PUBLISH_ORIGIN_HET}"); fi
+
+  # Legacy name (GLOBAL).
   if [[ -n "${PUBLISH_ORIGIN_GLOBAL:-}" ]]; then origins+=("${PUBLISH_ORIGIN_GLOBAL}"); fi
-  if [[ -n "${PUBLISH_ORIGIN_WORLD:-}" ]]; then origins+=("${PUBLISH_ORIGIN_WORLD}"); fi
-  if [[ -n "${PUBLISH_ORIGIN_EARTH:-}" ]]; then origins+=("${PUBLISH_ORIGIN_EARTH}"); fi
 fi
 
 if [[ "${#origins[@]}" -eq 0 ]]; then
-  echo "error: no origins provided; set ORIGIN_URLS or ORIGIN_BASE_URL/PUBLISH_ORIGIN_{GLOBAL,WORLD,EARTH}" >&2
+  echo "error: no origins provided; set ORIGIN_URLS or ORIGIN_BASE_URL/PUBLISH_ORIGIN_{SCW,DO,HET} (or legacy PUBLISH_ORIGIN_GLOBAL)" >&2
   exit 2
 fi
 

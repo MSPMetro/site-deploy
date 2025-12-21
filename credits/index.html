@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Graphics credits and attribution for MSPMetro." />
+
+    <link rel="stylesheet" href="../static/css/daily.css" />
+    <link
+      rel="preload"
+      href="../static/fonts/AtkinsonHyperlegibleNext-Regular.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="../static/fonts/AtkinsonHyperlegibleNext-Bold.otf"
+      as="font"
+      type="font/otf"
+      crossorigin
+    />
+    <link rel="icon" type="image/png" href="../static/favicon.png" />
+    <link rel="apple-touch-icon" href="../static/favicon.png" />
+    <title>MSPMetro - Credits</title>
+  </head>
+  <body id="top">
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="orientation" aria-label="Orientation">
+      <div class="wrap">
+        <dl class="orientation-grid">
+          <div class="orientation-logo">
+            <dt class="sr-only">MSPMetro</dt>
+            <dd>
+              <a class="brand" href="https://www.mspmetro.com/" aria-label="MSPMetro home">
+                <img src="/static/Logo_SVG.svg" alt="" aria-hidden="true" width="72" height="72" />
+              </a>
+            </dd>
+          </div>
+          <div>
+            <dt>Day</dt>
+            <dd>[[ dateInZone "Monday" now "America/Chicago" ]]</dd>
+          </div>
+          <div>
+            <dt>Date</dt>
+            <dd>[[ dateInZone "January 2, 2006" now "America/Chicago" ]]</dd>
+          </div>
+          <div>
+            <dt>Region</dt>
+            <dd>Twin Cities</dd>
+          </div>
+          <div>
+            <dt>Weather</dt>
+            <dd>
+              32°F <span class="muted">(feels 26°F)</span>
+              <span aria-hidden="true">•</span> Snow after 7pm
+            </dd>
+          </div>
+          <div class="orientation-sun">
+            <dt>Sunrise/Sunset</dt>
+            <dd>7:47am / 4:36pm</dd>
+          </div>
+          <div class="orientation-utc">
+            <dt>UTC</dt>
+            <dd>
+              <span class="orientation-utc__value">[[ now.UTC.Format "15:04Z" ]]</span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </header>
+
+    <nav class="top-nav" aria-label="Primary">
+      <div class="wrap">
+        <a href="/weather/">Weather</a> · <a href="/metro/">Metro</a> ·
+        <a href="/world/">World</a> · <a href="/neighbors/">Neighbors</a> ·
+        <a href="/transit/">Transit</a> · <a href="/events/">Events</a>
+      </div>
+    </nav>
+
+    <main id="main" class="wrap" tabindex="-1">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Daily briefing</a>
+      </nav>
+
+      <header class="section-header">
+        <h1>Credits</h1>
+        <p class="section-meta">Graphics and attribution</p>
+        <div class="credit-panel">
+          <p>
+            Photos Sourced from Creative Commons sources and
+            <a href="https://www.minneapolis.org/media/photos/">Meet Minneapolis https://www.minneapolis.org/media/photos/</a>
+          </p>
+        </div>
+      </header>
+
+      <section class="prose prose--wide" aria-labelledby="graphics">
+        <h2 id="graphics">Graphics used on MSPMetro</h2>
+        <div class="credit-panel credit-panel--wide">
+          <ul>
+            <li>
+              loring_park.webp - Page background. Source: CrowdRiff. License: Attribution.
+	      <br>  Credit: Omar Ghrayeb @ogeevisuas and Courtesy of Meet Minneapolis.
+            </li>
+            <li>
+              weather.webp - Weather card. Source: Friedrich Haag (CC BY-SA 4.0).
+              https://commons.wikimedia.org/wiki/File:004_2018_05_14_Extremes_Wetter.jpg
+            </li>
+            <li>
+              metro.webp - Metro card. Source: Martin St-Amant (S23678) (CC BY-SA 3.0).
+              https://commons.wikimedia.org/wiki/File:122_-_Toronto_-_Septembre_2009.jpg
+            </li>
+            <li>
+              world.webp - World card. Source: NASA (public domain).
+	      <br>https://commons.wikimedia.org/wiki/File:Africa_and_Europe_from_a_Million_Miles_Away.png
+            </li>
+            <li>
+              events.webp - Events card. Source: Steffen Prößdorf (CC BY-SA 4.0).
+	      <br>https://commons.wikimedia.org/wiki/File:2022-05-22_50._Internationales_Dixieland_Festival_Dresden_1DX_2056_by_Stepro-2.jpg
+            </li>
+            <li>
+              downtown.webp - Metro Card. Source: Meet Minneapolis and Greg Lundgren. License: Attribution.
+              Credit: https://platform.crowdriff.com/m/meet-minneapolis/album/355881
+            </li>
+            <li>
+              metro_transit.webp - Transit card. Source: Meet Minneapolis and Metro Transit. License: Attribution.
+              Credit: Metro Transit and Courtesy of Meet Minneapolis
+            </li>
+            <li>
+              neighbors.webp - Neighbors card. Source: Meet Minneapolis . License: Attribution.
+	      <br>Credit: Whittier Alliance, https://images.squarespace-cdn.com/content/v1/674f69c45f5dde11815a8478/cbce4edd-77c0-4338-8396-cd05929b7894/8E8C8097.jpg
+            </li>
+            <li>
+              fringe_festival.webp - Picks: Events. Source: Meet Minneapolis. License: Attribution.
+	      <br>Credit: Rarig Center School of Rhythm, Fringe Festival, Mat Lindquist, https://platform.crowdriff.com/m/meet-minneapolis/all
+            </li>
+            <li>
+              prince.webp - Picks: Neighbors. Source: Meet Minneapolis. License: Attribution.
+              Credit: Photo Courtesy of Meet Minneapolis
+            </li>
+            <li>
+              international.webp - Picks: World. Source: Meet Minneapolis. License: Attribution.
+              Credit: Photo Courtesy of Meet Minneapolis
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="prose prose--wide" aria-labelledby="thanks">
+        <h2 id="thanks">Thanks</h2>
+        <div class="credit-panel">
+          <p>
+            Thank you to the photographers, archives, and institutions that make
+            these images available. If any attribution needs adjustment, please
+            notify MSPMetro and we will update promptly.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer" aria-label="Context">
+      <div class="wrap">
+        <p>
+          Daylight: 9h 00m<span aria-hidden="true"> • </span>Moon: Waxing gibbous
+        </p>
+        <p class="footer-links">
+          <a href="/how-we-know/">How we know</a
+          ><span aria-hidden="true"> · </span><a href="/daily/">Daily archive</a><span aria-hidden="true"> · </span><a href="/credits/">Credits</a>
+        </p>
+        <p class="footer-build">
+          Build: colossus<span aria-hidden="true"> · </span>2025-12-21T07:15:14Z
+          <span aria-hidden="true"> · </span>17d2be8
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

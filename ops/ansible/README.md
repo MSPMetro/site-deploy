@@ -14,7 +14,7 @@ From the repo root:
 
 ```bash
 ANSIBLE_CONFIG=ops/ansible/ansible.cfg \
-ansible-playbook -i 'edge.eur.mspmetro.com,' -u root ops/ansible/site.yml
+ansible-playbook -i 'edge-eur.mspmetro.com,' -u root ops/ansible/site.yml
 ```
 
 ## Rebuild + Publish + Update Edges (CLI-only)
@@ -36,7 +36,7 @@ Override defaults (example):
 
 ```bash
 ANSIBLE_CONFIG=ops/ansible/ansible.cfg \
-ansible-playbook -i 'edge.eur.mspmetro.com,' -u root ops/ansible/site.yml \
+ansible-playbook -i 'edge-eur.mspmetro.com,' -u root ops/ansible/site.yml \
   --extra-vars 'mspmetro_db_password=REDACTED mspmetro_ui_port=8090'
 ```
 

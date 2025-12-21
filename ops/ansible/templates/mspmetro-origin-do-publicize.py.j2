@@ -12,8 +12,8 @@ from botocore.exceptions import ClientError
 
 def main() -> int:
     # systemd provides DST_ALIAS/DST_BUCKET via EnvironmentFile
-    dst_alias = os.environ.get("DST_ALIAS") or "world"
-    bucket = os.environ.get("DST_BUCKET") or "mspmetro-world"
+    dst_alias = os.environ.get("DST_ALIAS") or "origin-do"
+    bucket = os.environ.get("DST_BUCKET") or "origin-do"
     prefixes = tuple(
         (
             os.environ.get("PUBLICIZE_PREFIXES")

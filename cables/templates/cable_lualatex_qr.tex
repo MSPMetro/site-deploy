@@ -1,0 +1,69 @@
+% MSPMetro Cable (LuaLaTeX) — verification-oriented, restrained layout.
+% Template placeholders use the project convention: {{{NAME}}}
+%
+% Required placeholders:
+% - CABLE_ID
+% - UTC
+% - SUMMARY_TEX
+% - FACTS_TEX
+% - ASSESSMENT_TEX
+% - OUTLOOK_TEX
+% - MICROCODE
+% - QR_PATH
+%
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{fontspec}
+\usepackage{graphicx}
+
+% Fonts (TeX Live bundled TeX Gyre family).
+\setmainfont{TeX Gyre Termes}
+\newfontfamily\headerfont{TeX Gyre Heros}
+\newfontfamily\microcodefont{TeX Gyre Cursor}
+
+% Simple paragraph spacing without extra packages.
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\pagestyle{empty}
+
+\begin{document}
+
+{\headerfont\bfseries\Large {{{CABLE_ID}}}\par}
+{\headerfont\small UTC: {{{UTC}}}\par}
+
+\vspace{0.8em}
+
+{\headerfont\bfseries SUMMARY\par}
+{{{SUMMARY_TEX}}}
+
+\vspace{0.6em}
+
+{\headerfont\bfseries FACTS\par}
+{{{FACTS_TEX}}}
+
+\vspace{0.6em}
+
+{\headerfont\bfseries ASSESSMENT\par}
+{{{ASSESSMENT_TEX}}}
+
+\vspace{0.6em}
+
+{\headerfont\bfseries OUTLOOK\par}
+{{{OUTLOOK_TEX}}}
+
+\vspace{0.8em}
+
+{\microcodefont\fontsize{6.5}{7.2}\selectfont {{{MICROCODE}}}\par}
+
+\vspace{0.5em}
+
+\begin{center}
+\includegraphics[width=1.25in]{ {{{QR_PATH}}} }
+\end{center}
+
+\vspace{0.6em}
+
+{\headerfont\small END CABLE\par}
+
+\end{document}

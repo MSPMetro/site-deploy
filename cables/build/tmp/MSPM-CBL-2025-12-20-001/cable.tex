@@ -1,0 +1,114 @@
+% NOTE: This is rendered by cables/tools/build_cable.py. Keep it content-first.
+\documentclass[11pt,letterpaper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{iftex}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{parskip}
+
+% Fonts: TeX Gyre family (bundled with TeX Live).
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{tgtermes}
+  \usepackage{tgheros}
+  \usepackage{tgcursor}
+\else
+  \usepackage{fontspec}
+  \setmainfont{TeX Gyre Termes}
+  \setsansfont{TeX Gyre Heros}
+  \setmonofont{TeX Gyre Cursor}
+\fi
+
+\hypersetup{colorlinks=false,pdfborder={0 0 0}}
+
+\begin{document}
+\raggedbottom
+
+% Reproducible PDF metadata (derived from source, not wall clock).
+\ifdefined\pdfinfoomitdate\pdfinfoomitdate=1\fi
+\ifdefined\pdfsuppressptexinfo\pdfsuppressptexinfo=15\fi
+\ifdefined\pdftrailerid\pdftrailerid{<D268278243A23C06D3F7357ACFC2BCFC><00F2526FA1CAF9A1175E60A628C1FF61>}\fi
+\ifdefined\pdfinfo
+\pdfinfo{
+  /CreationDate (D:20251220143000Z)
+  /ModDate (D:20251220143000Z)
+}
+\fi
+
+\begin{center}
+{\Large \textbf{ MSPM-CBL-2025-12-20-001 }}\\
+\end{center}
+
+\vspace{2pt}
+
+\begin{center}
+{\scriptsize\ttfamily START CABLE}
+\end{center}
+
+\vspace{6pt}
+
+\noindent\textbf{SUMMARY}\par
+
+This is a sample Cable used to validate the build pipeline and the locked format.
+
+
+\noindent\textbf{FACTS}\par
+
+\begin{itemize}
+\item Source Markdown is ASCII-only.
+\item The build produces HTML, PDF, and a feed entry.
+\item The SHA-256 value is computed from canonical text derived from this source.
+\end{itemize}
+
+
+\noindent\textbf{ASSESSMENT}\par
+
+This repository scaffolds the end-to-end artifact generation and strict lint rules.
+
+
+\noindent\textbf{OUTLOOK}\par
+
+Future Cables replace this placeholder content with operational situational awareness.
+
+
+\vspace{6pt}
+
+\begin{center}
+\texttt{END CABLE}
+\end{center}
+
+\vspace{4pt}
+
+\begin{samepage}
+\begin{center}
+{\scriptsize\ttfamily START VERIFICATION}
+\end{center}
+
+\vspace{1pt}
+
+\noindent{\small\textbf{Verification}}\par
+\begingroup
+\scriptsize\ttfamily
+\noindent UTC: 2025-12-20T14:30Z\par
+\noindent SHA256: D2682782\allowbreak{}43A23C06\allowbreak{}D3F7357A\allowbreak{}CFC2BCFC\allowbreak{}00F2526F\allowbreak{}A1CAF9A1\allowbreak{}175E60A6\allowbreak{}28C1FF61\par
+\noindent SIG: ED25519-MSPM-Q4D9Z3W1KP7H8C\par
+\noindent Canonical: \url{ https://www.mspmetro.com/cables/MSPM-CBL-2025-12-20-001 }\par
+\endgroup
+
+\vspace{4pt}
+
+\begin{center}
+\includegraphics[width=1.15in]{ aztec.png }\par
+{\scriptsize\texttt{ MSPM-CBL-2025-12-20-001 }}
+\end{center}
+
+\vspace{2pt}
+
+\begin{center}
+{\scriptsize\ttfamily END VERIFICATION}
+\end{center}
+\end{samepage}
+
+\end{document}

@@ -5,6 +5,8 @@ import html
 import json
 import os
 import re
+import socket
+import subprocess
 import urllib.parse
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -53,6 +55,48 @@ def _load_denylist_urls() -> set[str]:
         denied = set()
     _DENY_URLS_CACHE = denied
     return denied
+
+
+@dataclass(frozen=True)
+class BuildMeta:
+    host: str
+    time_utc: str
+    commit: str
+
+
+def _git_short_sha() -> str:
+    repo_root = Path(__file__).resolve().parents[4]
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout.strip() or "unknown"
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+
+
+def _build_metadata() -> BuildMeta:
+    return BuildMeta(
+        host=socket.gethostname(),
+        time_utc=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        commit=_git_short_sha(),
+    )
+
+
+def _write_health_file(*, out_dir: Path, build_meta: BuildMeta) -> None:
+    payload = "\n".join(
+        [
+            f"build_time_utc={build_meta.time_utc}",
+            f"build_commit={build_meta.commit}",
+            f"build_host={build_meta.host}",
+            'served_by=[[ env "HOSTNAME" ]]',
+        ]
+    )
+    (out_dir / "health.txt").write_text(payload + "\n", encoding="utf-8")
 
 
 def _now() -> datetime:
@@ -109,6 +153,17 @@ def _arrow_internal() -> str:
 
 def _arrow_external() -> str:
     return '<span class="arrow" aria-hidden="true">↗</span><span class="sr-only"> (external site)</span>'
+
+
+def _site_href(href: str, *, root_prefix: str) -> str:
+    href = (href or "").strip()
+    if not href:
+        return ""
+    if href.startswith("#"):
+        return href
+    if re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", href):
+        return href
+    return f"{root_prefix}{href.lstrip('/')}"
 
 
 @dataclass(frozen=True)
@@ -601,7 +656,7 @@ def _severity_label(sev: str) -> str:
     }.get(v, v.title() or "Info")
 
 
-def _doc_head(*, title: str, description: str) -> str:
+def _doc_head(*, root_prefix: str, title: str, description: str) -> str:
     return f"""<!doctype html>
 <html lang="en">
   <head>
@@ -609,23 +664,23 @@ def _doc_head(*, title: str, description: str) -> str:
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="{_escape(description)}" />
 
-    <link rel="stylesheet" href="/static/css/daily.css" />
+    <link rel="stylesheet" href="{_escape(_site_href('/static/css/daily.css', root_prefix=root_prefix))}" />
     <link
       rel="preload"
-      href="/static/fonts/AtkinsonHyperlegibleNext-Regular.otf"
+      href="{_escape(_site_href('/static/fonts/AtkinsonHyperlegibleNext-Regular.otf', root_prefix=root_prefix))}"
       as="font"
       type="font/otf"
       crossorigin
     />
     <link
       rel="preload"
-      href="/static/fonts/AtkinsonHyperlegibleNext-Bold.otf"
+      href="{_escape(_site_href('/static/fonts/AtkinsonHyperlegibleNext-Bold.otf', root_prefix=root_prefix))}"
       as="font"
       type="font/otf"
       crossorigin
     />
-    <link rel="icon" type="image/png" href="/static/favicon.png" />
-    <link rel="apple-touch-icon" href="/static/favicon.png" />
+    <link rel="icon" type="image/png" href="{_escape(_site_href('/static/favicon.png', root_prefix=root_prefix))}" />
+    <link rel="apple-touch-icon" href="{_escape(_site_href('/static/favicon.png', root_prefix=root_prefix))}" />
     <title>{_escape(title)}</title>
   </head>
   <body id="top">
@@ -638,9 +693,10 @@ def _doc_foot() -> str:
 """
 
 
-def _orientation_block(*, now: datetime) -> str:
-    day = _day_full(now)
-    date_long = _format_date_long(now)
+def _orientation_block(*, now: datetime, root_prefix: str) -> str:
+    day = '[[ dateInZone "Monday" now "America/Chicago" ]]'
+    date_long = '[[ dateInZone "January 2, 2006" now "America/Chicago" ]]'
+    utc_clock = '[[ now.UTC.Format "15:04Z" ]]'
     od = load_orientation_data()
     temp = f"{od.temp_f}°F" if od.temp_f is not None else "--°F"
     feels = f"(feels {od.feels_like_f}°F)" if od.feels_like_f is not None else "(feels --°F)"
@@ -653,13 +709,21 @@ def _orientation_block(*, now: datetime) -> str:
     <header class="orientation" aria-label="Orientation">
       <div class="wrap">
         <dl class="orientation-grid">
+          <div class="orientation-logo">
+            <dt class="sr-only">MSPMetro</dt>
+            <dd>
+              <a class="brand" href="https://www.mspmetro.com/" aria-label="MSPMetro home">
+                <img src="/static/Logo_SVG.svg" alt="" aria-hidden="true" width="72" height="72" />
+              </a>
+            </dd>
+          </div>
           <div>
             <dt>Day</dt>
-            <dd>{_escape(day)}</dd>
+            <dd>{day}</dd>
           </div>
           <div>
             <dt>Date</dt>
-            <dd>{_escape(date_long)}</dd>
+            <dd>{date_long}</dd>
           </div>
           <div>
             <dt>Region</dt>
@@ -672,38 +736,35 @@ def _orientation_block(*, now: datetime) -> str:
               <span aria-hidden="true">•</span> {_escape(phrase)}
             </dd>
           </div>
-          <div>
-            <dt>Sunrise</dt>
-            <dd>{_escape(sunrise)}</dd>
+          <div class="orientation-sun">
+            <dt>Sunrise/Sunset</dt>
+            <dd>{_escape(sunrise)} / {_escape(sunset)}</dd>
           </div>
-          <div>
-            <dt>Sunset</dt>
-            <dd>{_escape(sunset)}</dd>
+          <div class="orientation-utc">
+            <dt>UTC</dt>
+            <dd><span class="orientation-utc__value">{utc_clock}</span></dd>
           </div>
         </dl>
       </div>
-      <a class="brand" href="/" aria-label="MSPMetro home">
-        <img src="/static/Logo_SVG.svg" alt="" aria-hidden="true" width="96" height="96" />
-      </a>
     </header>
 """
 
 
-def _top_nav(*, is_frontpage: bool) -> str:
+def _top_nav(*, is_frontpage: bool, root_prefix: str) -> str:
     if is_frontpage:
-        weather = "/#weather"
-        metro = "/#metro"
-        world = "/#world"
-        neighbors = "/#neighbors"
-        transit = "/#transit"
-        events = "/#events"
-    else:
-        weather = "/weather/"
-        metro = "/metro/"
-        world = "/world/"
+        weather = "#weather"
+        metro = "#metro"
+        world = "#world"
         neighbors = "/neighbors/"
-        transit = "/transit/"
+        transit = "#transit"
         events = "/events/"
+    else:
+        weather = _site_href("/weather/", root_prefix=root_prefix)
+        metro = _site_href("/metro/", root_prefix=root_prefix)
+        world = _site_href("/world/", root_prefix=root_prefix)
+        neighbors = _site_href("/neighbors/", root_prefix=root_prefix)
+        transit = _site_href("/transit/", root_prefix=root_prefix)
+        events = _site_href("/events/", root_prefix=root_prefix)
 
     return f"""
     <nav class="top-nav" aria-label="Primary">
@@ -716,7 +777,7 @@ def _top_nav(*, is_frontpage: bool) -> str:
 """
 
 
-def _footer() -> str:
+def _footer(*, root_prefix: str, build_meta: BuildMeta) -> str:
     od = load_orientation_data()
     daylight = od.daylight or "—"
     moon = od.moon_phase or "—"
@@ -733,15 +794,20 @@ def _footer() -> str:
           Daylight: {_escape(daylight)}<span aria-hidden="true"> • </span>{moon_line}
         </p>
         <p class="footer-links">
-          <a href="/how-we-know/">How we know</a
-          ><span aria-hidden="true"> · </span><a href="/daily/">Daily archive</a>
+          <a href="{_escape(_site_href('/how-we-know/', root_prefix=root_prefix))}">How we know</a
+          ><span aria-hidden="true"> · </span><a href="{_escape(_site_href('/daily/', root_prefix=root_prefix))}">Daily archive</a
+          ><span aria-hidden="true"> · </span><a href="{_escape(_site_href('/credits/', root_prefix=root_prefix))}">Credits</a>
+        </p>
+        <p class="footer-build">
+          Build: {_escape(build_meta.host)}<span aria-hidden="true"> · </span>{_escape(build_meta.time_utc)}
+          <span aria-hidden="true"> · </span>{_escape(build_meta.commit)}
         </p>
       </div>
     </footer>
 """
 
 
-def _render_frontpage(db, *, out_dir: Path, now: datetime) -> None:
+def _render_frontpage(db, *, out_dir: Path, now: datetime, build_meta: BuildMeta) -> None:
     alerts = _load_active_alerts(db, limit=3, now=now)
     alert_list_hidden_attr = "" if alerts else " hidden"
 
@@ -774,7 +840,7 @@ def _render_frontpage(db, *, out_dir: Path, now: datetime) -> None:
             if not title or not item.canonical_url:
                 continue
             anchor = f"i-{item.id.hex[:10]}"
-            href = f"{sec.page_path}#{anchor}"
+            href = _site_href(f"{sec.page_path}#{anchor}", root_prefix="")
             list_items.append(
                 f"""              <li>
                 <a href="{_escape(href)}">{_escape(title)} {_arrow_internal()}</a>
@@ -785,7 +851,7 @@ def _render_frontpage(db, *, out_dir: Path, now: datetime) -> None:
             list_items.extend(
                 [
                     f"""              <li>
-                <a href="{_escape(sec.page_path)}">World briefing {_arrow_internal()}</a>
+                <a href="{_escape(_site_href(sec.page_path, root_prefix=''))}">World briefing {_arrow_internal()}</a>
               </li>""",
                     f"""              <li>
                 <a href="https://www.npr.org/sections/world/" rel="external noopener noreferrer">NPR World {_arrow_external()}</a>
@@ -799,7 +865,7 @@ def _render_frontpage(db, *, out_dir: Path, now: datetime) -> None:
             list_items.extend(
                 [
                     f"""              <li>
-                <a href="{_escape(sec.page_path)}">Today and this weekend {_arrow_internal()}</a>
+                <a href="{_escape(_site_href(sec.page_path, root_prefix=''))}">Today and this weekend {_arrow_internal()}</a>
               </li>""",
                     f"""              <li>
                 <a href="https://www.minneapolis.org/calendar/" rel="external noopener noreferrer">Minneapolis calendar {_arrow_external()}</a>
@@ -812,7 +878,7 @@ def _render_frontpage(db, *, out_dir: Path, now: datetime) -> None:
         elif not list_items:
             list_items.append(
                 f"""              <li>
-                <a href="{_escape(sec.page_path)}">Open {_escape(sec.label)} {_arrow_internal()}</a>
+                <a href="{_escape(_site_href(sec.page_path, root_prefix=''))}">Open {_escape(sec.label)} {_arrow_internal()}</a>
               </li>"""
             )
 
@@ -820,7 +886,7 @@ def _render_frontpage(db, *, out_dir: Path, now: datetime) -> None:
         header_html = (
             f'<h2 class="kicker" id="{sec.key}-title">{header}</h2>'
             if sec.key == "weather"
-            else f'<h2 class="kicker" id="{sec.key}-title"><a href="{_escape(sec.page_path)}">{header} {_arrow_internal()}</a></h2>'
+            else f'<h2 class="kicker" id="{sec.key}-title"><a href="{_escape(_site_href(sec.page_path, root_prefix=""))}">{header} {_arrow_internal()}</a></h2>'
         )
 
         cards_html.append(
@@ -829,13 +895,14 @@ def _render_frontpage(db, *, out_dir: Path, now: datetime) -> None:
             <ul class="link-list">
 {os.linesep.join(list_items)}
             </ul>
-            <a class="see-all" href="{_escape(sec.page_path)}">SEE ALL {_arrow_internal()}</a>
+            <a class="see-all" href="{_escape(_site_href(sec.page_path, root_prefix=''))}">SEE ALL {_arrow_internal()}</a>
           </section>"""
         )
 
-        # Picks: 2 items per section if available, else skip.
-        if sec.key in {"weather", "metro", "neighbors", "transit", "events"}:
-            pick_items = items[:2]
+        # Picks: only story/event picks (no Weather/Transit, and no Metro).
+        # Use 4 items where possible for a richer "this looks interesting" scan.
+        if sec.key in {"neighbors", "events"}:
+            pick_items = items[:4]
             if pick_items:
                 pick_li = []
                 for item, src in pick_items:
@@ -843,7 +910,7 @@ def _render_frontpage(db, *, out_dir: Path, now: datetime) -> None:
                     if not title or not item.canonical_url:
                         continue
                     anchor = f"i-{item.id.hex[:10]}"
-                    href = f"{sec.page_path}#{anchor}"
+                    href = _site_href(f"{sec.page_path}#{anchor}", root_prefix="")
                     note = f"From {src.name}"
                     affects = _affects_from_title(title)
                     if affects:
@@ -880,31 +947,54 @@ def _render_frontpage(db, *, out_dir: Path, now: datetime) -> None:
                     + """</a>
                 <span class="pick-note">Useful if weather changes plans.</span>
               </li>
+              <li>
+                <a href="https://www.walkerart.org/calendar/" rel="external noopener noreferrer">Walker Art Center """
+                    + _arrow_external()
+                    + """</a>
+                <span class="pick-note">Museum + film listings.</span>
+              </li>
+              <li>
+                <a href="https://first-avenue.com/shows/" rel="external noopener noreferrer">First Avenue shows """
+                    + _arrow_external()
+                    + """</a>
+                <span class="pick-note">Live music planning.</span>
+              </li>
             </ul>
           </section>"""
                 )
 
-    # World picks: keep a couple of external, non-paywalled references.
-    if not any(s.key == "world" and s.source_names for s in SECTIONS):
-        picks_html.append(
-            """          <section class="card card--pick" aria-labelledby="pick-world-title">
+    # World picks: keep a few external, non-paywalled references.
+    picks_html.append(
+        """          <section class="card card--pick" aria-labelledby="pick-world-title">
             <h3 class="kicker" id="pick-world-title">WORLD</h3>
             <ul class="link-list">
               <li>
                 <a href="https://www.npr.org/sections/world/" rel="external noopener noreferrer">NPR World """
-            + _arrow_external()
-            + """</a>
+        + _arrow_external()
+        + """</a>
                 <span class="pick-note">A fast scan for high-impact developments.</span>
               </li>
               <li>
                 <a href="https://www.bbc.com/news/world" rel="external noopener noreferrer">BBC World """
-            + _arrow_external()
-            + """</a>
+        + _arrow_external()
+        + """</a>
                 <span class="pick-note">Useful background if something breaks late.</span>
+              </li>
+              <li>
+                <a href="https://apnews.com/world-news" rel="external noopener noreferrer">AP World """
+        + _arrow_external()
+        + """</a>
+                <span class="pick-note">Straight reporting, quick headlines.</span>
+              </li>
+              <li>
+                <a href="https://www.reuters.com/world/" rel="external noopener noreferrer">Reuters World """
+        + _arrow_external()
+        + """</a>
+                <span class="pick-note">Markets and geopolitics signal.</span>
               </li>
             </ul>
           </section>"""
-        )
+    )
 
     # What changed: count items in last 2 hours.
     recent_cutoff = now - timedelta(hours=2)
@@ -912,45 +1002,56 @@ def _render_frontpage(db, *, out_dir: Path, now: datetime) -> None:
 
     doc = (
         _doc_head(
+            root_prefix="",
             title="MSPMetro — Daily",
             description="A calm, accessible daily dashboard for news, transit, weather, and events.",
         )
-        + _orientation_block(now=now)
-        + _top_nav(is_frontpage=True)
+        + _orientation_block(now=now, root_prefix="")
+        + _top_nav(is_frontpage=True, root_prefix="")
         + f"""
     <main id="main" class="wrap" tabindex="-1">
       <h1 class="sr-only">MSPMetro Daily Dashboard</h1>
 
-      <section class="status" aria-label="City status">
-        <p class="status__line">
-          <span class="status__label">CITY STATUS:</span> Normal operations<span aria-hidden="true"> · </span>No declared emergencies
-        </p>
+      <section class="feature" aria-labelledby="feature-title">
+        <h2 class="kicker" id="feature-title"><a href="/featured/">FEATURE</a></h2>
+        <h3 class="feature__hed"><a href="/featured/">Featured story and context</a></h3>
+        <p class="feature__dek">One story at a time: high-priority context, restrained and sourceable.</p>
       </section>
 
-      <section class="alerts" aria-live="polite" aria-atomic="true">
-        <h2 class="kicker" id="alerts-title">ALERTS</h2>
-        <ul class="alert-list" aria-labelledby="alerts-title"{alert_list_hidden_attr}>
+      <div class="front-updates" role="group" aria-label="Status and alerts">
+        <section class="status" aria-label="City status">
+          <p class="status__line">
+            <span class="status__label">CITY STATUS:</span> Normal operations<span aria-hidden="true"> · </span>No declared emergencies
+          </p>
+        </section>
+
+        <section class="alerts" aria-live="polite" aria-atomic="true">
+          <h2 class="kicker" id="alerts-title">ALERTS</h2>
+          <ul class="alert-list" aria-labelledby="alerts-title"{alert_list_hidden_attr}>
 {os.linesep.join(alert_items)}
-        </ul>
-        <p class="empty-state">No current alerts or disruptions</p>
-      </section>
+          </ul>
+          <p class="empty-state">No current alerts or disruptions</p>
+        </section>
+      </div>
 
-      <section class="glance" aria-label="Today at a glance">
-        <h2 class="kicker" id="glance-title">TODAY AT A GLANCE</h2>
-        <ul class="brief-list" aria-labelledby="glance-title">
-          <li>Built from verified sources; updates post quietly.</li>
-          <li>Use section pages for depth; front page stays a briefing.</li>
-          <li>Look for advisories that change your next 12 hours.</li>
-        </ul>
-      </section>
+      <div class="front-briefs" role="group" aria-label="Briefs">
+        <section class="glance" aria-label="Today at a glance">
+          <h2 class="kicker" id="glance-title">TODAY AT A GLANCE</h2>
+          <ul class="brief-list" aria-labelledby="glance-title">
+            <li>Built from verified sources; updates post quietly.</li>
+            <li>Use section pages for depth; front page stays a briefing.</li>
+            <li>Look for advisories that change your next 12 hours.</li>
+          </ul>
+        </section>
 
-      <section class="before" aria-label="Before you go">
-        <h2 class="kicker" id="before-title">BEFORE YOU GO</h2>
-        <ul class="brief-list" aria-labelledby="before-title">
-          <li>Check weather and transit before travel.</li>
-          <li>Keep plans flexible if advisories escalate.</li>
-        </ul>
-      </section>
+        <section class="before" aria-label="Before you go">
+          <h2 class="kicker" id="before-title">BEFORE YOU GO</h2>
+          <ul class="brief-list" aria-labelledby="before-title">
+            <li>Check weather and transit before travel.</li>
+            <li>Keep plans flexible if advisories escalate.</li>
+          </ul>
+        </section>
+      </div>
 
       <section id="summary" aria-label="Summary">
         <div class="grid" aria-label="Daily sections">
@@ -968,14 +1069,14 @@ def _render_frontpage(db, *, out_dir: Path, now: datetime) -> None:
       <p class="what-changed" id="what-changed">Updated recently: {_escape(str(recent_items))} items</p>
     </main>
 """
-        + _footer()
+        + _footer(root_prefix="", build_meta=build_meta)
         + _doc_foot()
     )
 
     (out_dir / "index.html").write_text(doc, encoding="utf-8")
 
 
-def _render_section_page(db, *, sec: SectionDef, out_dir: Path, now: datetime) -> None:
+def _render_section_page(db, *, sec: SectionDef, out_dir: Path, now: datetime, build_meta: BuildMeta) -> None:
     out_path = out_dir / sec.key / "index.html"
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1049,7 +1150,7 @@ def _render_section_page(db, *, sec: SectionDef, out_dir: Path, now: datetime) -
     if not index_items:
         index_items.append(
             """          <li>
-            <a href="/">Daily briefing <span class="arrow" aria-hidden="true">→</span></a>
+            <a href="../">Daily briefing <span class="arrow" aria-hidden="true">→</span></a>
             <p class="dek">No items available yet for this section.</p>
             <p class="meta-line">Updated today</p>
           </li>"""
@@ -1058,7 +1159,7 @@ def _render_section_page(db, *, sec: SectionDef, out_dir: Path, now: datetime) -
             """        <article id="empty" class="article-detail">
           <h2>No items yet</h2>
           <p>This section is staged but not populated yet.</p>
-          <p class="back"><a href="/">Back to daily <span class="arrow" aria-hidden="true">→</span></a></p>
+          <p class="back"><a href="../">Back to daily <span class="arrow" aria-hidden="true">→</span></a></p>
         </article>"""
         )
 
@@ -1066,13 +1167,13 @@ def _render_section_page(db, *, sec: SectionDef, out_dir: Path, now: datetime) -
     desc = f"{sec.label} briefing: daily civic updates."
 
     doc = (
-        _doc_head(title=title, description=desc)
-        + _orientation_block(now=now)
-        + _top_nav(is_frontpage=False)
+        _doc_head(root_prefix="../", title=title, description=desc)
+        + _orientation_block(now=now, root_prefix="../")
+        + _top_nav(is_frontpage=False, root_prefix="../")
         + f"""
     <main id="main" class="wrap" tabindex="-1">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
-        <a href="/">Daily briefing</a>
+        <a href="../">Daily briefing</a>
       </nav>
 
       <header class="section-header">
@@ -1113,7 +1214,7 @@ def _render_section_page(db, *, sec: SectionDef, out_dir: Path, now: datetime) -
       </section>
     </main>
 """
-        + _footer()
+        + _footer(root_prefix="../", build_meta=build_meta)
         + _doc_foot()
     )
 
@@ -1123,11 +1224,13 @@ def _render_section_page(db, *, sec: SectionDef, out_dir: Path, now: datetime) -
 def build_site(*, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     now = _now()
+    build_meta = _build_metadata()
 
     with session() as db:
-        _render_frontpage(db, out_dir=out_dir, now=now)
+        _render_frontpage(db, out_dir=out_dir, now=now, build_meta=build_meta)
         for sec in SECTIONS:
-            _render_section_page(db, sec=sec, out_dir=out_dir, now=now)
+            _render_section_page(db, sec=sec, out_dir=out_dir, now=now, build_meta=build_meta)
+    _write_health_file(out_dir=out_dir, build_meta=build_meta)
 
 
 def main() -> int:

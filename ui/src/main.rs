@@ -116,9 +116,7 @@ fn pick_static_dir() -> anyhow::Result<PathBuf> {
         return Ok(from_source_tree);
     }
 
-    anyhow::bail!(
-        "could not locate static/ directory (set UI_STATIC_DIR or run from repo root)"
-    )
+    anyhow::bail!("could not locate static/ directory (set UI_STATIC_DIR or run from repo root)")
 }
 
 async fn index(State(state): State<AppState>) -> Response {
@@ -132,7 +130,10 @@ async fn index(State(state): State<AppState>) -> Response {
             );
             (
                 StatusCode::OK,
-                Html(render_document(render_body(FrontpageResponse::default(), Some(msg)))),
+                Html(render_document(render_body(
+                    FrontpageResponse::default(),
+                    Some(msg),
+                ))),
             )
                 .into_response()
         }
@@ -140,7 +141,10 @@ async fn index(State(state): State<AppState>) -> Response {
 }
 
 async fn fetch_frontpage(state: &AppState) -> anyhow::Result<FrontpageResponse> {
-    let url = format!("{}/api/v1/frontpage", state.backend_origin.trim_end_matches('/'));
+    let url = format!(
+        "{}/api/v1/frontpage",
+        state.backend_origin.trim_end_matches('/')
+    );
     let resp = state.client.get(url).send().await?.error_for_status()?;
     Ok(resp.json::<FrontpageResponse>().await?)
 }
@@ -170,7 +174,13 @@ fn render_document(body: String) -> String {
 }
 
 fn render_body(data: FrontpageResponse, backend_error: Option<String>) -> String {
-    let mut dom = VirtualDom::new_with_props(app, AppProps { data, backend_error });
+    let mut dom = VirtualDom::new_with_props(
+        app,
+        AppProps {
+            data,
+            backend_error,
+        },
+    );
     dom.rebuild_in_place();
     render(&dom)
 }
@@ -240,6 +250,20 @@ fn app(props: AppProps) -> Element {
         header { class: "orientation", aria_label: "Orientation",
             div { class: "wrap",
                 dl { class: "orientation-grid",
+                    div { class: "orientation-logo",
+                        dt { class: "sr-only", "MSPMetro" }
+                        dd {
+                            a { class: "brand", href: "https://www.mspmetro.com/", aria_label: "MSPMetro home",
+                                img {
+                                    src: "/static/Logo_SVG.svg",
+                                    alt: "",
+                                    aria_hidden: "true",
+                                    width: "72",
+                                    height: "72",
+                                }
+                            }
+                        }
+                    }
                     div {
                         dt { "Day" }
                         dd { "{day_full(&o.day)}" }
@@ -261,19 +285,14 @@ fn app(props: AppProps) -> Element {
                             "{o.phrase}"
                         }
                     }
-                    div {
-                        dt { "Sunset" }
-                        dd { "{o.sunset}" }
+                    div { class: "orientation-sun",
+                        dt { "Sunrise/Sunset" }
+                        dd { "{o.sunrise} / {o.sunset}" }
                     }
-                }
-            }
-            div { class: "brand",
-                img {
-                    src: "/static/Logo_SVG.svg",
-                    alt: "",
-                    aria_hidden: "true",
-                    width: "96",
-                    height: "96",
+                    div { class: "orientation-utc",
+                        dt { "UTC" }
+                        dd { span { class: "orientation-utc__value", r#"[[ now.UTC.Format "15:04Z" ]]"# } }
+                    }
                 }
             }
         }
@@ -283,9 +302,9 @@ fn app(props: AppProps) -> Element {
                 a { href: "/#weather", "Weather" } " · "
                 a { href: "/#metro", "Metro" } " · "
                 a { href: "/#world", "World" } " · "
-                a { href: "/#neighbors", "Neighbors" } " · "
+                a { href: "/neighbors/", "Neighbors" } " · "
                 a { href: "/#transit", "Transit" } " · "
-                a { href: "/#events", "Events" }
+                a { href: "/events/", "Events" }
             }
         }
 

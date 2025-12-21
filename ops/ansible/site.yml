@@ -24,6 +24,7 @@
     mspmetro_ui_bind: "127.0.0.1:{{ mspmetro_ui_port }}"
     mspmetro_ui_static_dir: /var/www/mspmetro/current/static
 
+    # Primary site label already present in the edge Caddyfile.
     mspmetro_caddy_site: edge.eur.mspmetro.com
 
   tasks:
@@ -52,6 +53,9 @@
           - "--exclude=.git/"
           - "--exclude=target/"
           - "--exclude=backend/.venv/"
+          - "--exclude=.venv/"
+          - "--exclude=cables/.venv/"
+          - "--exclude=.venv-publisher/"
           - "--exclude=**/__pycache__/"
           - "--exclude=*.pyc"
 

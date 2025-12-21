@@ -58,11 +58,37 @@
         delete: true
         rsync_opts:
           - "--exclude=.git/"
+          - "--exclude=.env"
+          - "--exclude=.env.*"
+          - "--exclude=target/"
+          - "--exclude=build/"
+          - "--exclude=data/cache/"
+          - "--exclude=backend/.venv/"
+          - "--exclude=.venv/"
+          - "--exclude=cables/.venv/"
+          - "--exclude=.venv-publisher/"
+          - "--exclude=**/__pycache__/"
+          - "--exclude=*.pyc"
       when: mspmetro_sync_repo | bool
       tags: ["sync"]
 
+    - name: Ensure cables build dir is writable (remove stale root-owned artifacts)
+      ansible.builtin.file:
+        path: "{{ mspmetro_repo_dir }}/cables/build"
+        state: absent
+      tags: ["sync"]
+
+    - name: Ensure cables subtree ownership (publisher user)
+      ansible.builtin.file:
+        path: "{{ mspmetro_repo_dir }}/cables"
+        state: directory
+        owner: "{{ mspmetro_source_user }}"
+        group: "{{ mspmetro_source_group }}"
+        recurse: true
+      tags: ["sync"]
+
     - name: Ensure ingestion service exists
-      ansible.builtin.command: systemctl status mspmetro-source-ingest.service
+      ansible.builtin.command: systemctl cat mspmetro-source-ingest.service
       changed_when: false
       when: mspmetro_run_ingest | bool
       tags: ["ingest"]
@@ -75,7 +101,7 @@
       tags: ["ingest"]
 
     - name: Ensure publish service exists
-      ansible.builtin.command: systemctl status mspmetro-source-publish.service
+      ansible.builtin.command: systemctl cat mspmetro-source-publish.service
       changed_when: false
       tags: ["publish"]
 
@@ -108,6 +134,13 @@
     repo_root: "{{ playbook_dir }}/../.."
 
   tasks:
+    - name: Ensure DigitalOcean origin objects are public (ACL)
+      ansible.builtin.command: make publicize-origin-do
+      args:
+        chdir: "{{ repo_root }}"
+      changed_when: false
+      tags: ["verify"]
+
     - name: Verify origins (manifests reachable)
       ansible.builtin.command: make verify-origins
       args:

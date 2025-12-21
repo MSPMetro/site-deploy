@@ -21,35 +21,61 @@
     mspmetro_brief_group: caddy
 
     # Origins are read from the controller environment (usually via `.env`).
+    #
+    # For convenience, we also fall back to parsing a local dotenv file when the
+    # current Ansible process environment is missing the needed variables.
+    mspmetro_controller_dotenv_path: >-
+      {{
+        lookup('env', 'MSPMETRO_DOTENV_FILE')
+        | default(playbook_dir ~ '/../..//.env', true)
+      }}
+    mspmetro_controller_dotenv: "{{ lookup('file', mspmetro_controller_dotenv_path, errors='ignore') }}"
+
     edge_global_origin: >-
       {{
-        lookup('env', 'EDGE_GLOBAL_ORIGIN')
+        lookup('env', 'EDGE_ORIGIN_SCW')
+        | default(lookup('env', 'PUBLISH_ORIGIN_SCW'), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^EDGE_ORIGIN_SCW=.*$') | default('', true) | regex_replace('^EDGE_ORIGIN_SCW=', '') | trim | regex_replace('^\"|\"$', '')), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^PUBLISH_ORIGIN_SCW=.*$') | default('', true) | regex_replace('^PUBLISH_ORIGIN_SCW=', '') | trim | regex_replace('^\"|\"$', '')), true)
+        | default(lookup('env', 'EDGE_GLOBAL_ORIGIN'), true)
         | default(lookup('env', 'ORIGIN_BASE_URL'), true)
         | default(lookup('env', 'PUBLISH_ORIGIN_GLOBAL'), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^EDGE_GLOBAL_ORIGIN=.*$') | default('', true) | regex_replace('^EDGE_GLOBAL_ORIGIN=', '') | trim | regex_replace('^\"|\"$', '')), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^ORIGIN_BASE_URL=.*$') | default('', true) | regex_replace('^ORIGIN_BASE_URL=', '') | trim | regex_replace('^\"|\"$', '')), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^PUBLISH_ORIGIN_GLOBAL=.*$') | default('', true) | regex_replace('^PUBLISH_ORIGIN_GLOBAL=', '') | trim | regex_replace('^\"|\"$', '')), true)
         | default(lookup('env', 'ORIGIN_GLOBAL'), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^ORIGIN_GLOBAL=.*$') | default('', true) | regex_replace('^ORIGIN_GLOBAL=', '') | trim | regex_replace('^\"|\"$', '')), true)
       }}
-    edge_world_origin: >-
+    edge_do_origin: >-
       {{
-        lookup('env', 'EDGE_WORLD_ORIGIN')
+        lookup('env', 'EDGE_ORIGIN_DO')
+        | default(lookup('env', 'PUBLISH_ORIGIN_DO'), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^EDGE_ORIGIN_DO=.*$') | default('', true) | regex_replace('^EDGE_ORIGIN_DO=', '') | trim | regex_replace('^\"|\"$', '')), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^PUBLISH_ORIGIN_DO=.*$') | default('', true) | regex_replace('^PUBLISH_ORIGIN_DO=', '') | trim | regex_replace('^\"|\"$', '')), true)
         | default(lookup('env', 'DO_ORIGIN_BASE_URL'), true)
-        | default(lookup('env', 'PUBLISH_ORIGIN_WORLD'), true)
-        | default(lookup('env', 'ORIGIN_WORLD'), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^DO_ORIGIN_BASE_URL=.*$') | default('', true) | regex_replace('^DO_ORIGIN_BASE_URL=', '') | trim | regex_replace('^\"|\"$', '')), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^ORIGIN_DO=.*$') | default('', true) | regex_replace('^ORIGIN_DO=', '') | trim | regex_replace('^\"|\"$', '')), true)
+        | default(lookup('env', 'ORIGIN_DO'), true)
       }}
-    edge_earth_origin: >-
+    edge_het_origin: >-
       {{
-        lookup('env', 'EDGE_EARTH_ORIGIN')
-        | default(lookup('env', 'EARTH_ORIGIN_BASE_URL'), true)
-        | default(lookup('env', 'PUBLISH_ORIGIN_EARTH'), true)
-        | default(lookup('env', 'ORIGIN_EARTH'), true)
+        lookup('env', 'EDGE_ORIGIN_HET')
+        | default(lookup('env', 'PUBLISH_ORIGIN_HET'), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^EDGE_ORIGIN_HET=.*$') | default('', true) | regex_replace('^EDGE_ORIGIN_HET=', '') | trim | regex_replace('^\"|\"$', '')), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^PUBLISH_ORIGIN_HET=.*$') | default('', true) | regex_replace('^PUBLISH_ORIGIN_HET=', '') | trim | regex_replace('^\"|\"$', '')), true)
+        | default(lookup('env', 'HET_ORIGIN_BASE_URL'), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^HET_ORIGIN_BASE_URL=.*$') | default('', true) | regex_replace('^HET_ORIGIN_BASE_URL=', '') | trim | regex_replace('^\"|\"$', '')), true)
+        | default((mspmetro_controller_dotenv | regex_search('(?m)^ORIGIN_HET=.*$') | default('', true) | regex_replace('^ORIGIN_HET=', '') | trim | regex_replace('^\"|\"$', '')), true)
+        | default(lookup('env', 'ORIGIN_HET'), true)
       }}
 
   tasks:
-    - name: Ensure global + world origins are configured (required for redundancy)
+    - name: Ensure origin-scw + origin-do origins are configured (required for redundancy)
       ansible.builtin.assert:
         that:
           - edge_global_origin | length > 0
-          - edge_world_origin | length > 0
-        fail_msg: "Missing origin(s); set PUBLISH_ORIGIN_GLOBAL and PUBLISH_ORIGIN_WORLD in .env before deploying."
+          - edge_do_origin | length > 0
+        fail_msg: "Missing origin(s); set PUBLISH_ORIGIN_SCW (or EDGE_ORIGIN_SCW) and PUBLISH_ORIGIN_DO (or EDGE_ORIGIN_DO) in .env before deploying."
 
     - name: Select briefing origin for this edge
       ansible.builtin.set_fact:
@@ -58,24 +84,24 @@
             (
               (
                 ('mspmetro_edge_us' in group_names)
-                or ('mspmetro_edge_world' in group_names)
+                or ('mspmetro_edge_do' in group_names)
               )
-              and (edge_world_origin | length > 0)
+              and (edge_do_origin | length > 0)
             )
-            | ternary(edge_world_origin, edge_global_origin)
+            | ternary(edge_do_origin, edge_global_origin)
           }}
         mspmetro_brief_origin_secondary: >-
           {{
             (
               (
                 ('mspmetro_edge_us' in group_names)
-                or ('mspmetro_edge_world' in group_names)
+                or ('mspmetro_edge_do' in group_names)
               )
-              and (edge_world_origin | length > 0)
+              and (edge_do_origin | length > 0)
             )
-            | ternary(edge_global_origin, edge_world_origin)
+            | ternary(edge_global_origin, edge_do_origin)
           }}
-        mspmetro_brief_origin_tertiary: "{{ edge_earth_origin }}"
+        mspmetro_brief_origin_tertiary: "{{ edge_het_origin }}"
 
     - name: Ensure cityfeed-puller is installed
       ansible.builtin.copy:
@@ -151,6 +177,54 @@
         enabled: true
         state: started
 
+    - name: Ensure Caddy drop-in directory exists
+      ansible.builtin.file:
+        path: /etc/systemd/system/caddy.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install Caddy environment drop-in (served-by)
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/caddy.service.d/mspmetro-env.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Service]
+          Environment=MSPMETRO_NODE=%H
+      register: caddy_env_dropin
+
+    - name: Reload systemd for Caddy env
+      ansible.builtin.systemd:
+        daemon_reload: true
+      when: caddy_env_dropin is defined and caddy_env_dropin.changed
+
+    - name: Restart Caddy for env update
+      ansible.builtin.systemd:
+        name: caddy
+        state: restarted
+      when: caddy_env_dropin is defined and caddy_env_dropin.changed
+
+    - name: Check current path state
+      ansible.builtin.stat:
+        path: "{{ mspmetro_brief_root }}/current"
+        follow: false
+      register: current_path
+
+    - name: Move current directory aside if it blocks symlink swap
+      ansible.builtin.shell: |
+        set -euo pipefail
+        ts=$(date +%Y%m%d%H%M%S)
+        mv "{{ mspmetro_brief_root }}/current" "{{ mspmetro_brief_root }}/current.dir.${ts}"
+      args:
+        executable: /bin/bash
+      when:
+        - current_path.stat.exists
+        - current_path.stat.isdir
+        - not current_path.stat.islnk
+
     - name: Pull now
       ansible.builtin.systemd:
         name: "{{ mspmetro_brief_unit }}.service"
@@ -165,9 +239,44 @@
       register: caddy_root_replace
       changed_when: caddy_root_replace.changed
 
+    - name: Install Caddy header patcher (Permissions-Policy)
+      ansible.builtin.copy:
+        src: files/patch_caddy_headers.py
+        dest: /usr/local/bin/mspmetro-patch-caddy-headers
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Ensure Permissions-Policy header is present
+      ansible.builtin.command: /usr/local/bin/mspmetro-patch-caddy-headers --caddyfile /etc/caddy/Caddyfile
+      register: caddy_headers_patch
+      changed_when: "'CHANGED' in caddy_headers_patch.stdout"
+
+    - name: Install Caddy templates patcher ([[ ... ]])
+      ansible.builtin.copy:
+        src: files/patch_caddy_templates.py
+        dest: /usr/local/bin/mspmetro-patch-caddy-templates
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Ensure Caddy templates handler is enabled for HTML pages
+      ansible.builtin.command: /usr/local/bin/mspmetro-patch-caddy-templates --caddyfile /etc/caddy/Caddyfile
+      register: caddy_templates_patch
+      changed_when: "'CHANGED' in caddy_templates_patch.stdout"
+
+    - name: Format + validate Caddy config if changed
+      ansible.builtin.shell: |
+        set -euo pipefail
+        caddy fmt --overwrite /etc/caddy/Caddyfile
+        caddy validate --config /etc/caddy/Caddyfile
+      args:
+        executable: /bin/bash
+      changed_when: false
+      when: (caddy_root_replace is defined and caddy_root_replace.changed) or (caddy_headers_patch is defined and caddy_headers_patch.changed) or (caddy_templates_patch is defined and caddy_templates_patch.changed)
+
     - name: Reload Caddy if config changed
       ansible.builtin.systemd:
         name: caddy
         state: reloaded
-      when: caddy_root_replace is defined and caddy_root_replace.changed
-
+      when: (caddy_root_replace is defined and caddy_root_replace.changed) or (caddy_headers_patch is defined and caddy_headers_patch.changed) or (caddy_templates_patch is defined and caddy_templates_patch.changed)

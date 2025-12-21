@@ -8,23 +8,23 @@
       content="Transit briefing: service status, disruptions, and practical rider guidance."
     />
 
-    <link rel="stylesheet" href="/static/css/daily.css" />
+    <link rel="stylesheet" href="../static/css/daily.css" />
     <link
       rel="preload"
-      href="/static/fonts/AtkinsonHyperlegibleNext-Regular.otf"
+      href="../static/fonts/AtkinsonHyperlegibleNext-Regular.otf"
       as="font"
       type="font/otf"
       crossorigin
     />
     <link
       rel="preload"
-      href="/static/fonts/AtkinsonHyperlegibleNext-Bold.otf"
+      href="../static/fonts/AtkinsonHyperlegibleNext-Bold.otf"
       as="font"
       type="font/otf"
       crossorigin
     />
-    <link rel="icon" type="image/png" href="/static/favicon.png" />
-    <link rel="apple-touch-icon" href="/static/favicon.png" />
+    <link rel="icon" type="image/png" href="../static/favicon.png" />
+    <link rel="apple-touch-icon" href="../static/favicon.png" />
     <title>MSPMetro — Transit</title>
   </head>
   <body id="top">
@@ -33,13 +33,21 @@
     <header class="orientation" aria-label="Orientation">
       <div class="wrap">
         <dl class="orientation-grid">
+          <div class="orientation-logo">
+            <dt class="sr-only">MSPMetro</dt>
+            <dd>
+              <a class="brand" href="https://www.mspmetro.com/" aria-label="MSPMetro home">
+                <img src="/static/Logo_SVG.svg" alt="" aria-hidden="true" width="72" height="72" />
+              </a>
+            </dd>
+          </div>
           <div>
             <dt>Day</dt>
-            <dd>Wednesday</dd>
+            <dd>[[ dateInZone "Monday" now "America/Chicago" ]]</dd>
           </div>
           <div>
             <dt>Date</dt>
-            <dd>December 17, 2025</dd>
+            <dd>[[ dateInZone "January 2, 2006" now "America/Chicago" ]]</dd>
           </div>
           <div>
             <dt>Region</dt>
@@ -52,21 +60,19 @@
               <span aria-hidden="true">•</span> Snow after 7pm
             </dd>
           </div>
-          <div>
-            <dt>Sunset</dt>
-            <dd>4:36pm</dd>
+          <div class="orientation-sun">
+            <dt>Sunrise/Sunset</dt>
+            <dd>7:47am / 4:36pm</dd>
+          </div>
+          <div class="orientation-utc">
+            <dt>UTC</dt>
+            <dd>
+              <span class="orientation-utc__value">[[ now.UTC.Format "15:04Z" ]]</span>
+            </dd>
           </div>
         </dl>
       </div>
-      <a class="brand" href="/" aria-label="MSPMetro home">
-        <img
-          src="/static/Logo_SVG.svg"
-          alt=""
-          aria-hidden="true"
-          width="96"
-          height="96"
-        />
-      </a>
+      
     </header>
 
     <nav class="top-nav" aria-label="Primary">
@@ -272,7 +278,11 @@
         </p>
         <p class="footer-links">
           <a href="/how-we-know/">How we know</a
-          ><span aria-hidden="true"> · </span><a href="/daily/">Daily archive</a>
+          ><span aria-hidden="true"> · </span><a href="/daily/">Daily archive</a><span aria-hidden="true"> · </span><a href="/credits/">Credits</a>
+        </p>
+        <p class="footer-build">
+          Build: colossus<span aria-hidden="true"> · </span>2025-12-21T07:15:14Z
+          <span aria-hidden="true"> · </span>17d2be8
         </p>
       </div>
     </footer>

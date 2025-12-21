@@ -1,0 +1,80 @@
+---
+# Bootstrap an edge host (no Docker):
+# - installs Caddy
+# - creates the MSPMetro briefing web root
+# - writes a minimal Caddyfile that serves the briefing tree over HTTP (:80)
+#
+# Then run ops/ansible/deploy_edges.yml to install the puller and sync content.
+#
+# Usage:
+#   ANSIBLE_CONFIG=ops/ansible/ansible.cfg ansible-playbook -i ops/ansible/inventory.ini ops/ansible/bootstrap_edge.yml --limit edge-ny.mspmetro.com
+#
+# Notes:
+# - We intentionally serve HTTP only here to avoid TLS issuance failures until DNS is confirmed.
+# - Once DNS is in place, use ops/ansible/edge_hostnames.yml to add hostnames to the correct Caddy site blocks.
+
+- name: Bootstrap MSPMetro edge host
+  hosts: mspmetro_edges
+  become: true
+  gather_facts: false
+
+  vars:
+    mspmetro_brief_root: /var/www/mspmetro-brief
+
+  tasks:
+    - name: Install base packages (Caddy + utilities)
+      ansible.builtin.apt:
+        update_cache: true
+        name:
+          - ca-certificates
+          - curl
+          - rsync
+          - caddy
+        state: present
+
+    - name: Ensure briefing root exists
+      ansible.builtin.file:
+        path: "{{ mspmetro_brief_root }}"
+        state: directory
+        owner: caddy
+        group: caddy
+        mode: "0755"
+
+    - name: Ensure briefing snapshots dir exists
+      ansible.builtin.file:
+        path: "{{ mspmetro_brief_root }}/snapshots"
+        state: directory
+        owner: caddy
+        group: caddy
+        mode: "0755"
+
+    - name: Ensure current symlink exists (initial)
+      ansible.builtin.file:
+        src: "{{ mspmetro_brief_root }}/snapshots"
+        dest: "{{ mspmetro_brief_root }}/current"
+        state: link
+      changed_when: false
+      failed_when: false
+
+    - name: Write minimal Caddyfile (HTTP only)
+      ansible.builtin.copy:
+        dest: /etc/caddy/Caddyfile
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          :80 {
+            root * {{ mspmetro_brief_root }}/current
+            file_server
+          }
+      register: caddyfile_written
+
+    - name: Validate Caddy config
+      ansible.builtin.command: caddy validate --config /etc/caddy/Caddyfile
+      changed_when: false
+
+    - name: Enable and restart Caddy
+      ansible.builtin.systemd:
+        name: caddy
+        enabled: true
+        state: restarted
